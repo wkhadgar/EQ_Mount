@@ -5,6 +5,7 @@ menu
 
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
+#include "steppers.h"
 
 #define lcdRS D6
 #define lcdEN D8
@@ -124,6 +125,7 @@ void setup()    {
     action_last_time = millis();
 }
 
+
 bool sleeping = false;
 bool wake     = false;
 void loop()     {
@@ -142,10 +144,15 @@ void loop()     {
     }
 
     //automode settings
-    if ((time_now - ra_last_time >= RATE_ROTATION_MS) && auto_mode)    {
-        menu_op_value[RA]++; //R.A. increment over time
-        ra_last_time = time_now;
+    if (auto_mode) {
+        int tmp = menu_op_value[RA];
+        if ((time_now - ra_last_time >= RATE_ROTATION_MS))    {
+            menu_op_value[RA]++; //R.A. increment over time
+            ra_last_time = time_now;
+        }
+
     }
+
     
     //menu movement
     current_selection = menu_top_row+arrow_row; //qual option ta selecionada agora
