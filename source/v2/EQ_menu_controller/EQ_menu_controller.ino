@@ -176,11 +176,11 @@ void setup()    {
     attachInterrupt(digitalPinToInterrupt(SELECT), press_rotary_IRQ, RISING);
 
     //fake load suave 
-    display.drawRoundRect(7, 32, 118, 8, 3, 1);
-    for (uint8_t p = 10; p < 118; p++)    {
+    display.drawRoundRect(7, 32, 110, 8, 3, 1);
+    for (uint8_t p = 10; p < 110; p++)    {
         display.fillRoundRect(7, 32, p, 8, 3, 1);
         display.display(); 
-        delay(1000/(118));    
+        delay(1000/(110));    
     }
     display.setTextWrap(false);
     display.clearDisplay();
@@ -220,10 +220,10 @@ void loop()     {
         //int tmp = menu_op_value[RA];
         if ((time_now - ra_last_time >= RATE_ROTATION_MS))    {
             menu_op_value[hemisphere]?
-                (menu_op_value[RA]>1439? //hemisferio sul
+                (menu_op_value[RA]>1438? //hemisferio sul
                     menu_op_value[RA]=0:menu_op_value[RA]++)
                 :(menu_op_value[RA]<1? //hemisferio norte
-                    menu_op_value[RA]=1440:menu_op_value[RA]--); //R.A. increment over time
+                    menu_op_value[RA]=1439:menu_op_value[RA]--); //R.A. increment over time
 
             ra_last_time = time_now;
         }
@@ -237,7 +237,7 @@ void loop()     {
         
         for (int i = 0; i < OPTION_ROWS; i++)   {
             display.setCursor(9, 2+i*(52/(OPTION_ROWS-1)));
-            display.drawChar(0, 2+i*(52/(OPTION_ROWS-1)), (i==arrow_row?0x10:0x00), WHITE, BLACK, 1); //setinha (0x10) ou nada (0x00), depende da seleção atual
+            display.drawChar(0, 2+i*(52/(OPTION_ROWS-1)), (i==arrow_row?0xaf:0x00), WHITE, BLACK, 1); //setinha (0x10) ou nada (0x00), depende da seleção atual
             display.print(menu_str[menu_top_row+i]);
 
             switch (menu_top_row+i) {
@@ -288,9 +288,9 @@ void loop()     {
 
         if (select_pressed)    { //action on menu
             display.drawChar(0, 2+arrow_row*(52/(OPTION_ROWS-1)), 0x00, WHITE, BLACK, 1); //apaga a setinha antiga
-            display.drawChar(2, 2+arrow_row*(52/(OPTION_ROWS-1)), 0x10, WHITE, BLACK, 1); //redesenha a setinha deslocada
+            display.drawChar(3, 2+arrow_row*(52/(OPTION_ROWS-1)), 0xaf, WHITE, BLACK, 1); //redesenha a setinha deslocada
             display.display();
-            delay(800);
+            delay(200);
             
             select_pressed = false; 
             on_menu       = !on_menu;
