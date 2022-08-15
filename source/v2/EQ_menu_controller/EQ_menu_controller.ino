@@ -219,9 +219,11 @@ void loop()     {
     //wait screen configs
     if (wake_flag)  { //exit wait screen
 
-        for (uint8_t cont = 0; cont < (menu_op_value[brilho_tela]*127)/100; cont++) {
-            display.setContrast(cont); //bright up
-            delay(10);
+        if (sleeping)   {
+            for (uint8_t cont = 0; cont < (menu_op_value[brilho_tela]*127)/100; cont++) {
+                display.setContrast(cont); //bright up
+                delay(2);
+            }
         }
         action_last_time = time_now;
         wake_flag = false;
