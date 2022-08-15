@@ -2,10 +2,10 @@
 Ver 2.0
 menu com oled display
 */
+
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
-
 #include <EEPROM.h>
 //#include "steppers.h"
 
@@ -16,11 +16,15 @@ menu com oled display
 #define WHITE SH110X_WHITE
 #define BLACK SH110X_BLACK
 
+#define V_BAT_FULL 4.1
+#define V_BAT_LOW_WARNING 3.3
+#define V_BAT_EMPTY 3.1
+
 #define SELECT D5
 #define ROT_A D6
 #define ROT_B D7
 
-#define RATE_ROTATION_MS 1006 //mudar
+#define RATE_ROTATION_MICROS 1006500 //mudar
 
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -122,21 +126,26 @@ const char* menu_str[] = {
 uint16_t menu_op_value[MENU_SIZE] = {0};
 const uint8_t OPTION_ROWS = 5;
 
-uint32_t value_preview = 0;
+volatile uint32_t value_preview = 0;
 uint32_t lock_value;
-
-bool on_menu = 1;
-bool select_pressed = 0;
-uint8_t arrow_row = 0;
-uint8_t menu_top_row = 0;
-uint8_t current_selection;
 
 uint32_t action_last_time = 0;
 uint32_t ra_last_time = 0;
 uint32_t time_now = 0;
 
-void IRAM_ATTR spin_rotary_IRQ();
-void IRAM_ATTR press_rotary_IRQ();
+volatile uint8_t actual_menu_top_row = 0;
+uint8_t arrow_row = 0;
+uint8_t current_selection;
+
+volatile bool wake_flag     = false;
+volatile bool select_pressed = 0;
+bool sleeping = false;
+bool on_menu = 1;
+bool low_battery_flag = false;
+
+void IRAM_ATTR rotary_spin_ISR();
+void IRAM_ATTR rotary_press_ISR();
+uint8_t analog_to_battery_percent(uint16_t analog_measure);
 
 void setup()    {
     delay(250); //estabilizar a tensão
@@ -172,8 +181,8 @@ void setup()    {
     pinMode(ROT_A, INPUT);
     pinMode(ROT_B, INPUT);
     pinMode(SELECT, INPUT);
-    attachInterrupt(digitalPinToInterrupt(ROT_A), spin_rotary_IRQ, RISING);
-    attachInterrupt(digitalPinToInterrupt(SELECT), press_rotary_IRQ, RISING);
+    attachInterrupt(digitalPinToInterrupt(ROT_A), rotary_spin_ISR, RISING);
+    attachInterrupt(digitalPinToInterrupt(SELECT), rotary_press_ISR, RISING);
 
     //fake load suave 
     display.drawRoundRect(7, 32, 110, 8, 3, 1);
@@ -185,66 +194,70 @@ void setup()    {
     display.setTextWrap(false);
     display.clearDisplay();
 
-    ra_last_time = millis();
-    action_last_time = millis();
+    ra_last_time = micros();
+    action_last_time = micros();
 }
 
 
-bool sleeping = false;
-bool wake     = false;
+const uint8_t NUM_MEASURES = 100;
 void loop()     {
 
-    display.setTextSize(1);
-    time_now = millis();
+    uint16_t samples = 0;
+    for(uint8_t measures = 0; measures < NUM_MEASURES; measures++)  { //min stable reading
+        samples += analogRead(A0)/10; //erase the last digit
+    }
+    uint8_t battery_percent = analog_to_battery_percent(samples*10/NUM_MEASURES); //return it as a 0 and take the mean
+
+    display.drawRoundRect(107, 0, 20, 4, 1, WHITE);
+    display.fillRoundRect(107, 0, battery_percent/5, 4, 1, WHITE);
     
-    //wait screen 
-    if (wake)  {
+    
+    time_now = micros();
+    //wait screen configs
+    if (wake_flag)  { //exit wait screen
         display.setContrast((menu_op_value[brilho_tela]*127)/100);
         action_last_time = time_now;
-        wake     = false;
-        sleeping = false;
+        wake_flag = false;
+        sleeping  = false;
     }
-    else if (!sleeping && (time_now - action_last_time) >= (menu_op_value[tempo_tela]*1000))  { //sec to ms
-        display.setContrast(0);
+    else if (!sleeping && ((uint32_t)(time_now - action_last_time) >= (menu_op_value[tempo_tela]*1000000)))  { //seconds to us
+        for (uint8_t cont = menu_op_value[brilho_tela]; cont > 0; cont--) {
+            display.setContrast(cont); //dim
+            delay(10);
+        }
         sleeping = true;
     }
 
-    //automode settings
+    //manual and automode settings
     if (menu_op_value[manual_mode])   {
         //setar aqui os comandos do motor de passo em modo manual
         menu_op_value[automatic_mode] = false;
     }
     else if (menu_op_value[automatic_mode]) {
-        //setar aqui os comandos do motor de passo em modo mautomatico
-        menu_op_value[manual_mode] = false;
-        //int tmp = menu_op_value[RA];
-        if ((time_now - ra_last_time >= RATE_ROTATION_MS))    {
-            menu_op_value[hemisphere]?
-                (menu_op_value[RA]>1438? //hemisferio sul
-                    menu_op_value[RA]=0:menu_op_value[RA]++)
-                :(menu_op_value[RA]<1? //hemisferio norte
-                    menu_op_value[RA]=1439:menu_op_value[RA]--); //R.A. increment over time
+        //setar aqui os comandos do motor de passo em modo automatico
 
+        if ((uint32_t)(time_now - ra_last_time) >= RATE_ROTATION_MICROS)    {
+            menu_op_value[RA] = (menu_op_value[RA] + (menu_op_value[hemisphere]? 1 : -1)) % 1439; //RA change circulated
             ra_last_time = time_now;
         }
-
     }
 
     //menu movement
-    current_selection = menu_top_row+arrow_row; //qual option ta selecionada agora
+    display.setTextSize(1);
+    current_selection = actual_menu_top_row+arrow_row; //qual option ta selecionada agora
 
     if (on_menu)    {
         
         for (int i = 0; i < OPTION_ROWS; i++)   {
+            display.drawChar(0, 2+i*(52/(OPTION_ROWS-1)), (i==arrow_row?0xAF:0x00), WHITE, BLACK, 1); //setinha (0xAF) ou nada (0x00), depende da seleção atual
             display.setCursor(9, 2+i*(52/(OPTION_ROWS-1)));
-            display.drawChar(0, 2+i*(52/(OPTION_ROWS-1)), (i==arrow_row?0xaf:0x00), WHITE, BLACK, 1); //setinha (0x10) ou nada (0x00), depende da seleção atual
-            display.print(menu_str[menu_top_row+i]);
+            display.print(menu_str[actual_menu_top_row+i]);
 
-            switch (menu_top_row+i) {
+            switch (actual_menu_top_row+i) {
 
                 case DEC_:  {
                     display.print(": ");
-                    display.print(menu_op_value[DEC_]/60); display.print((char)0xf7); display.print(menu_op_value[DEC_]%60); display.print("'");
+                    display.print(menu_op_value[DEC_]/60); display.print((char)0xF7); display.print(menu_op_value[DEC_]%60); display.print("'");
                 }   break;
 
                 case RA:    {
@@ -282,13 +295,13 @@ void loop()     {
 
                 default:
                     display.print(": ");
-                    display.print(menu_op_value[menu_top_row+i]);
+                    display.print(menu_op_value[actual_menu_top_row+i]);
             }
         }
 
         if (select_pressed)    { //action on menu
             display.drawChar(0, 2+arrow_row*(52/(OPTION_ROWS-1)), 0x00, WHITE, BLACK, 1); //apaga a setinha antiga
-            display.drawChar(3, 2+arrow_row*(52/(OPTION_ROWS-1)), 0xaf, WHITE, BLACK, 1); //redesenha a setinha deslocada
+            display.drawChar(3, 2+arrow_row*(52/(OPTION_ROWS-1)), 0xAF, WHITE, BLACK, 1); //redesenha a setinha deslocada
             display.display();
             delay(200);
             
@@ -296,7 +309,7 @@ void loop()     {
             on_menu       = !on_menu;
             value_preview = menu_op_value[current_selection];
             lock_value    = value_preview;
-            wake          = true;
+            wake_flag          = true;
         }
         display.display();
         display.clearDisplay();
@@ -399,10 +412,9 @@ void loop()     {
             display.display();
             while (digitalRead(SELECT)) delay(800);
             select_pressed = false;
-            wake         = true;
-            ra_last_time = millis();
+            wake_flag         = true;
             on_menu      = !on_menu; //sai do sub-menu
-            if (menu_op_value[automatic_mode])   ra_last_time = millis(); //inicia o modo automatico
+            if (menu_op_value[automatic_mode])   ra_last_time = micros(); //inicia o modo automatico
         }
         
         display.display();
@@ -411,41 +423,47 @@ void loop()     {
 
 };
 
-void IRAM_ATTR spin_rotary_IRQ()   {
+void IRAM_ATTR rotary_spin_ISR()   {
+    bool clockwise = digitalRead(ROT_B);
+    uint32_t interrupt_now = micros();
     static uint32_t last_Interrupt = 0;
-    uint32_t interrupt_now = millis();
 
-    if (on_menu)    {
-        if ((interrupt_now - last_Interrupt) > 10)  { //debounce sem delay()
-            if (!digitalRead(ROT_B))    { //anti horario
-                if (arrow_row>0) arrow_row--;
-                else !menu_top_row?:menu_top_row--; //guard pra signed assignment e limite superior do menu
+    if ((uint32_t) (interrupt_now - last_Interrupt) > 10000)  { //debounce sem delay()
+        wake_flag = true;
+
+        if (on_menu)    {
+            if (!clockwise)    { //anti horario
+                if (arrow_row) --arrow_row;
+                else if (actual_menu_top_row) --actual_menu_top_row; //guard pra signed assignment e limite superior do menu
             }
             else    { //horario
-                if (arrow_row<OPTION_ROWS-1) arrow_row++;
-                else (menu_top_row==(MENU_SIZE-OPTION_ROWS))?:menu_top_row++;
+                if (arrow_row < OPTION_ROWS-1) ++arrow_row;
+                else if (actual_menu_top_row != (MENU_SIZE-OPTION_ROWS)) ++actual_menu_top_row; //limite inferior do menu
             }
         }
-        last_Interrupt = interrupt_now;
-    }
 
-    else    {
-        Serial.println(value_preview);
-        if ((interrupt_now - last_Interrupt) > 10)  { //debounce sem delay()
-            if (!digitalRead(ROT_B))   {
-                (value_preview<1)?:value_preview--; //guard pra signed assignment
-            }
-            else {
-                value_preview+=5;
-            }
+        else    {
+            if (!clockwise && value_preview) --value_preview; //guard pra signed assignment no anti horario
+            else value_preview+=5;
         }
-        last_Interrupt = interrupt_now;
+
+        last_Interrupt = micros();
     }
 
-    wake = true;
-    while (digitalRead(ROT_A));
+    while (digitalRead(ROT_A)); //so funfa com isso n sei pq
 }
 
-void IRAM_ATTR press_rotary_IRQ()   {
+void IRAM_ATTR rotary_press_ISR()   {
     select_pressed = true;
+}
+
+uint8_t analog_to_battery_percent(uint16_t analog_measure)  {
+    //change this function later
+
+    //aprroximated function of correction
+    float volts = ((map(analog_measure, 10, 1020, 0, 50)/10.0) - .2);
+    uint8_t percent = map(volts*10, V_BAT_EMPTY*10, V_BAT_FULL*10, 0, 100);
+    
+    if (!low_battery_flag && (volts <= V_BAT_LOW_WARNING)) low_battery_flag = true;
+    return percent;
 }
