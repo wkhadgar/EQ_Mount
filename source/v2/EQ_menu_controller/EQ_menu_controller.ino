@@ -16,6 +16,7 @@ menu com oled display
 #define WHITE SH110X_WHITE
 #define BLACK SH110X_BLACK
 
+#define NUM_MEASURES 100 //adc measures to be averaged
 #define V_BAT_FULL 4.1
 #define V_BAT_LOW_WARNING 3.3
 #define V_BAT_EMPTY 3.1
@@ -97,8 +98,9 @@ const uint8_t bitmap_eqmount_logo [] PROGMEM = {
 };
 // custom chars, 8x7px
 const uint8_t saving[] PROGMEM = {0x00, 0x1e, 0x1f, 0x11, 0x11, 0x1f, 0x1f}; //card
-const uint8_t lock[] PROGMEM = {0x0e, 0x11, 0x11, 0x1f, 0x1b, 0x1b, 0x1f}; //cadeado
-const uint8_t done[] PROGMEM = {0x00, 0x00, 0x01, 0x03, 0x16, 0x1c, 0x08}; //ok
+const uint8_t lock[] PROGMEM   = {0x0e, 0x11, 0x11, 0x1f, 0x1b, 0x1b, 0x1f}; //cadeado
+const uint8_t done[] PROGMEM   = {0x00, 0x00, 0x01, 0x03, 0x16, 0x1c, 0x08}; //ok
+const uint8_t alert[] PROGMEM  = {0x0e, 0x1b, 0x1b, 0x1f, 0x1b, 0x0e}; //cuidado
 
 //menu options (limited to given size)
 enum menu_option{
@@ -199,30 +201,35 @@ void setup()    {
 }
 
 
-const uint8_t NUM_MEASURES = 100;
 void loop()     {
+    
+    time_now = micros(); //reference for time calcs
 
+    //battery display
     uint16_t samples = 0;
-    for(uint8_t measures = 0; measures < NUM_MEASURES; measures++)  { //min stable reading
+    for(uint8_t measures = 0; measures < NUM_MEASURES; measures++)  { //average readings
         samples += analogRead(A0)/10; //erase the last digit
     }
-    uint8_t battery_percent = analog_to_battery_percent(samples*10/NUM_MEASURES); //return it as a 0 and take the mean
 
-    display.drawRoundRect(107, 0, 20, 4, 1, WHITE);
-    display.fillRoundRect(107, 0, battery_percent/5, 4, 1, WHITE);
-    
-    
-    time_now = micros();
+    uint8_t battery_percent = analog_to_battery_percent(samples*10/NUM_MEASURES); //take the mean and return the percentage
+    display.drawRoundRect(107, 1, 20, 4, 1, WHITE);
+    display.fillRoundRect(107, 1, battery_percent/5, 4, 1, WHITE);
+    if (low_battery_flag) display.drawBitmap(98, 0, alert, 8, 6, WHITE);
+
     //wait screen configs
     if (wake_flag)  { //exit wait screen
-        display.setContrast((menu_op_value[brilho_tela]*127)/100);
+
+        for (uint8_t cont = 0; cont < (menu_op_value[brilho_tela]*127)/100; cont++) {
+            display.setContrast(cont); //bright up
+            delay(10);
+        }
         action_last_time = time_now;
         wake_flag = false;
         sleeping  = false;
     }
     else if (!sleeping && ((uint32_t)(time_now - action_last_time) >= (menu_op_value[tempo_tela]*1000000)))  { //seconds to us
         for (uint8_t cont = menu_op_value[brilho_tela]; cont > 0; cont--) {
-            display.setContrast(cont); //dim
+            display.setContrast(cont); //dim down
             delay(10);
         }
         sleeping = true;
@@ -309,7 +316,6 @@ void loop()     {
             on_menu       = !on_menu;
             value_preview = menu_op_value[current_selection];
             lock_value    = value_preview;
-            wake_flag          = true;
         }
         display.display();
         display.clearDisplay();
@@ -412,7 +418,6 @@ void loop()     {
             display.display();
             while (digitalRead(SELECT)) delay(800);
             select_pressed = false;
-            wake_flag         = true;
             on_menu      = !on_menu; //sai do sub-menu
             if (menu_op_value[automatic_mode])   ra_last_time = micros(); //inicia o modo automatico
         }
@@ -455,6 +460,7 @@ void IRAM_ATTR rotary_spin_ISR()   {
 
 void IRAM_ATTR rotary_press_ISR()   {
     select_pressed = true;
+    wake_flag      = true;
 }
 
 uint8_t analog_to_battery_percent(uint16_t analog_measure)  {
