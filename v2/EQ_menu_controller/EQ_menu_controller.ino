@@ -151,7 +151,7 @@ uint8_t analog_to_battery_percent(uint16_t analog_measure);
 
 void setup()    {
     delay(250); //estabilizar a tensão
-    Serial.begin(115200);
+    //Serial.begin(115200);
 
     //data recover
     EEPROM.begin(MENU_SIZE);
