@@ -93,14 +93,62 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PBPin PBPin PBPin */
-  GPIO_InitStruct.Pin = SELECT_Pin|ROTARY_CLKW_Pin|ROTARY_TRIG_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pins : PBPin PBPin */
+  GPIO_InitStruct.Pin = SELECT_Pin|ROTARY_TRIG_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = ROTARY_CLKW_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(ROTARY_CLKW_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
 /* USER CODE BEGIN 2 */
+struct peripheral_t {
+  GPIO_TypeDef *GPIOx;
+  uint16_t port;
+};
 
+static struct {
+  struct peripheral_t gpio[_pin_amount];
+  isr_t isrs[_pin_amount];
+} self = { 
+  .gpio = {
+    {V_BATTERY_GPIO_Port, V_BATTERY_Pin},
+    {M1_DIR_GPIO_Port, M1_DIR_Pin},
+    {M1_STEP_GPIO_Port, M1_STEP_Pin},
+    {M2_DIR_GPIO_Port, M2_DIR_Pin},
+    {M2_STEP_GPIO_Port, M2_STEP_Pin},
+    {SELECT_GPIO_Port, SELECT_Pin},
+    {ROTARY_CLKW_GPIO_Port, ROTARY_CLKW_Pin},
+    {ROTARY_TRIG_GPIO_Port, ROTARY_TRIG_Pin},
+    {SCL_GPIO_Port, SCL_Pin},
+    {SDA_GPIO_Port, SDA_Pin},
+  },
+  .isrs = {0},
+};
+
+
+bool_t digitalRead(pin_t pin) {
+  bool_t state = (bool_t) HAL_GPIO_ReadPin(self.gpio[pin].GPIOx, self.gpio[pin].port);
+  return !state;
+}
+
+void digitalWrite(pin_t pin, bool_t value) {
+  HAL_GPIO_WritePin(self.gpio[pin].GPIOx, self.gpio[pin].port, (GPIO_PinState) value);
+  return;
+}
+
+void digitalToggle(pin_t pin)  {
+  HAL_GPIO_TogglePin(self.gpio[pin].GPIOx, self.gpio[pin].port);
+  return;
+}
 /* USER CODE END 2 */

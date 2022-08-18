@@ -40,6 +40,26 @@ void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
+typedef void (*isr_t)(GPIO_TypeDef* base, uint16_t pin);
+
+typedef enum {
+  A_V_BAT,
+  O_RA_DIR,
+  O_RA_STEP,
+  O_DEC_DIR,
+  O_DEC_STEP,
+  I_SELECT,
+  I_ROTARY_CLKW,
+  I_ROTARY_TRIG,
+  I2C_SCL,
+  I2C_SDA,
+  _pin_amount
+
+} pin_t;
+
+bool_t digitalRead(pin_t pin);
+void digitalWrite(pin_t pin, bool_t value);
+void digitalToggle(pin_t pin);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

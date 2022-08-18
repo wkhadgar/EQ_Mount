@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.h
+ * @brief          : Header for main.c file.
+ *                   This file contains the common defines of the application.
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2022 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -36,6 +36,8 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+typedef enum { False, True } bool_t;
+
 
 /* USER CODE END ET */
 
@@ -69,10 +71,12 @@ void Error_Handler(void);
 #define M2_STEP_GPIO_Port GPIOB
 #define SELECT_Pin GPIO_PIN_12
 #define SELECT_GPIO_Port GPIOB
+#define SELECT_EXTI_IRQn EXTI15_10_IRQn
 #define ROTARY_CLKW_Pin GPIO_PIN_13
 #define ROTARY_CLKW_GPIO_Port GPIOB
 #define ROTARY_TRIG_Pin GPIO_PIN_14
 #define ROTARY_TRIG_GPIO_Port GPIOB
+#define ROTARY_TRIG_EXTI_IRQn EXTI15_10_IRQn
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14

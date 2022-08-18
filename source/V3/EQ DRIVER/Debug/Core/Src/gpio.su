@@ -1,1 +1,4 @@
 ../Core/Src/gpio.c:44:6:MX_GPIO_Init	40	static
+../Core/Src/gpio.c:140:8:digitalRead	24	static
+../Core/Src/gpio.c:145:6:digitalWrite	16	static
+../Core/Src/gpio.c:150:6:digitalToggle	16	static
