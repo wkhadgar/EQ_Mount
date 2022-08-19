@@ -119,7 +119,6 @@ struct peripheral_t {
 
 static struct {
   struct peripheral_t gpio[_pin_amount];
-  isr_t isrs[_pin_amount];
 } self = { 
   .gpio = {
     {V_BATTERY_GPIO_Port, V_BATTERY_Pin},
@@ -133,7 +132,6 @@ static struct {
     {SCL_GPIO_Port, SCL_Pin},
     {SDA_GPIO_Port, SDA_Pin},
   },
-  .isrs = {0},
 };
 
 

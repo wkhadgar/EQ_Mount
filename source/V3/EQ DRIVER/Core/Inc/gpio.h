@@ -40,10 +40,9 @@ void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
-typedef void (*isr_t)(GPIO_TypeDef* base, uint16_t pin);
 
 typedef enum {
-  A_V_BAT,
+  A_V_BAT = 0,
   O_RA_DIR,
   O_RA_STEP,
   O_DEC_DIR,

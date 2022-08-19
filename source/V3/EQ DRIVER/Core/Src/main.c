@@ -105,6 +105,10 @@ int main(void)
 		  reset_var(b_selected);
 		  digitalToggle(O_RA_DIR);
 	  }
+	  else if (get_var(b_rotary_trigged))	{
+		  reset_var(b_rotary_trigged);
+		  digitalToggle(O_RA_STEP);
+	  }
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
