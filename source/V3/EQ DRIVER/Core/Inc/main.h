@@ -70,10 +70,12 @@ void Error_Handler(void);
 #define M2_STEP_GPIO_Port GPIOB
 #define SELECT_Pin GPIO_PIN_12
 #define SELECT_GPIO_Port GPIOB
+#define SELECT_EXTI_IRQn EXTI15_10_IRQn
 #define ROTARY_CLKW_Pin GPIO_PIN_13
 #define ROTARY_CLKW_GPIO_Port GPIOB
 #define ROTARY_TRIG_Pin GPIO_PIN_14
 #define ROTARY_TRIG_GPIO_Port GPIOB
+#define ROTARY_TRIG_EXTI_IRQn EXTI15_10_IRQn
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14

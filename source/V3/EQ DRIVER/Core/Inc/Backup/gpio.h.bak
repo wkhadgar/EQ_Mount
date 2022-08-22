@@ -40,17 +40,16 @@ void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
-typedef void (*isr_t)(GPIO_TypeDef* base, uint16_t pin);
 
 typedef enum {
-  A_V_BAT,
-  O_RA_DIR,
-  O_RA_STEP,
-  O_DEC_DIR,
-  O_DEC_STEP,
-  I_SELECT,
-  I_ROTARY_CLKW,
-  I_ROTARY_TRIG,
+  AN_V_BAT = 0,
+  OUT_RA_DIR,
+  OUT_RA_STEP,
+  OUT_DEC_DIR,
+  OUT_DEC_STEP,
+  IN_SELECT,
+  IN_ROTARY_CLKW,
+  IN_ROTARY_TRIG,
   I2C_SCL,
   I2C_SDA,
   _pin_amount
@@ -60,6 +59,7 @@ typedef enum {
 bool_t digitalRead(pin_t pin);
 void digitalWrite(pin_t pin, bool_t value);
 void digitalToggle(pin_t pin);
+void digitalPulse(pin_t pin, uint8_t pulse_ms);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

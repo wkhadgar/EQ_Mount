@@ -1,32 +1,31 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2022 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
 #include "i2c.h"
-#include "usart.h"
 #include "gpio.h"
-#include "variables.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "variables.h"
+#include "sh1106.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,7 +56,15 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-  bool_t is_selected = False;
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	if (GPIO_Pin == ROTARY_TRIG_Pin)	{
+		set_flag(rotary_trigged);
+	}
+	else if (GPIO_Pin == SELECT_Pin)	{
+		set_flag(selected);
+	}
+}
 
 /* USER CODE END 0 */
 
@@ -89,28 +96,45 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
   MX_I2C1_Init();
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
+
+	const uint8_t DEBOUNCE_DELAY_MS = 10;
+	uint32_t last_move_ticks = 0; //to track time passed in ms with HAL_GetTick()
+	SH1106_Init();
+	HAL_Delay(2500);
+	SH1106_setAllPixelsOn(1);
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	while (1) {
     /* USER CODE END WHILE */
-	  if (get_var(b_selected))	{
-		  reset_var(b_selected);
-		  digitalToggle(O_RA_DIR);
-	  }
-	  else if (get_var(b_rotary_trigged))	{
-		  reset_var(b_rotary_trigged);
-		  digitalToggle(O_RA_STEP);
-	  }
+
     /* USER CODE BEGIN 3 */
-  }
+
+		if (get_flag(rotary_trigged))	{ //rotary encoder trigged
+			reset_flag(rotary_trigged);
+			if ((HAL_GetTick() - last_move_ticks) >= DEBOUNCE_DELAY_MS)	{
+
+				digitalToggle(OUT_RA_DIR);
+				SH1106_drawCircle(64, 32, 30);
+				SH1106_flush();
+				last_move_ticks = HAL_GetTick();
+			}
+		}
+		
+		else if (get_flag(selected))	{ //rotary encoder trigged
+			reset_flag(selected);
+			if ((HAL_GetTick() - last_move_ticks) >= DEBOUNCE_DELAY_MS)	{
+
+				digitalToggle(OUT_RA_STEP);
+				last_move_ticks = HAL_GetTick();
+			}
+		}
+	}
   /* USER CODE END 3 */
 }
 
@@ -192,11 +216,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
+	/* User can add his own implementation to report the HAL error return state */
+	__disable_irq();
+	while (1) {
+	}
   /* USER CODE END Error_Handler_Debug */
 }
 

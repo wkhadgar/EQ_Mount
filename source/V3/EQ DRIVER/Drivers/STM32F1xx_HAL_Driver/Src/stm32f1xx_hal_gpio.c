@@ -103,7 +103,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
-#include "variables.h"
 
 /** @addtogroup STM32F1xx_HAL_Driver
   * @{
@@ -547,15 +546,7 @@ HAL_StatusTypeDef HAL_GPIO_LockPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
 void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin)
 {
   /* EXTI line interrupt detected */
-
-	if (GPIO_Pin == SELECT_Pin)	set_var(b_selected);
-	else if (GPIO_Pin == ROTARY_TRIG_Pin) set_var(b_rotary_trigged);
-  
-  if (__HAL_GPIO_EXTI_GET_IT(GPIO_Pin) != 0x00u)
-  {
-    __HAL_GPIO_EXTI_CLEAR_IT(GPIO_Pin);
     HAL_GPIO_EXTI_Callback(GPIO_Pin);
-  }
 }
 
 /**

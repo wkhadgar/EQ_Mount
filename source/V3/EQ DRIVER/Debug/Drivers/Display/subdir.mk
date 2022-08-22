@@ -5,16 +5,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Drivers/Display/GFX.c \
-../Drivers/Display/OLED_SH1106G.c 
+../Drivers/Display/sh1106.c 
 
 OBJS += \
-./Drivers/Display/GFX.o \
-./Drivers/Display/OLED_SH1106G.o 
+./Drivers/Display/sh1106.o 
 
 C_DEPS += \
-./Drivers/Display/GFX.d \
-./Drivers/Display/OLED_SH1106G.d 
+./Drivers/Display/sh1106.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -24,7 +21,7 @@ Drivers/Display/%.o Drivers/Display/%.su: ../Drivers/Display/%.c Drivers/Display
 clean: clean-Drivers-2f-Display
 
 clean-Drivers-2f-Display:
-	-$(RM) ./Drivers/Display/GFX.d ./Drivers/Display/GFX.o ./Drivers/Display/GFX.su ./Drivers/Display/OLED_SH1106G.d ./Drivers/Display/OLED_SH1106G.o ./Drivers/Display/OLED_SH1106G.su
+	-$(RM) ./Drivers/Display/sh1106.d ./Drivers/Display/sh1106.o ./Drivers/Display/sh1106.su
 
 .PHONY: clean-Drivers-2f-Display
 
