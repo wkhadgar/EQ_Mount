@@ -11,7 +11,7 @@
 #include "main.h"
 
 typedef enum {
-	selected, rotary_trigged, _IRQ_vars_amount,
+	selected, rotary_trigged, clockwise, _IRQ_vars_amount,
 } bool_var_t;
 
 typedef enum {

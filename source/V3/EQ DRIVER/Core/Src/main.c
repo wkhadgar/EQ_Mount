@@ -60,6 +60,7 @@ void SystemClock_Config(void);
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == ROTARY_TRIG_Pin)	{
+		if (ROTARY_CLKW_GPIO_Port->IDR & ROTARY_CLKW_Pin)	set_flag(clockwise);
 		set_flag(rotary_trigged);
 	}
 	else if (GPIO_Pin == SELECT_Pin)	{
@@ -104,9 +105,9 @@ int main(void)
 	const uint8_t DEBOUNCE_DELAY_MS = 10;
 	uint32_t last_move_ticks = 0; //to track time passed in ms with HAL_GetTick()
 	SH1106_Init();
-	HAL_Delay(500);
 	SH1106_setAllPixelsOn(0);
 	SH1106_clear();
+	bool_t toggle = 0;
 
   /* USER CODE END 2 */
 
@@ -123,7 +124,14 @@ int main(void)
 
 				//digitalToggle(OUT_RA_DIR);
 
-				SH1106_drawCircle(64, 32, 10);
+				if (get_flag(clockwise))	{
+					reset_flag(clockwise);
+					SH1106_drawCircle(64, 32, 10);
+				}
+				else	{
+					toggle = !toggle;
+					SH1106_setInvert(toggle);
+				}
 
 				last_move_ticks = HAL_GetTick();
 			}
