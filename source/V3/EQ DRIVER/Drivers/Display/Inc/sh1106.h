@@ -10,12 +10,12 @@
 // Use bit-banding to draw pixel
 //   0 - use logic operations to set pixel color
 //   1 - use bit-banding to set pixel color
-#define SH1106_USE_BITBAND   0
+#define SH1106_USE_BITBAND   1
 
 // Pixel set function definition
 //   0 - call pixel function (less code size in cost of speed)
 //   1 - inline pixel function (higher speed in cost of code size)
-#define SH1106_OPT_PIXEL     0
+#define SH1106_OPT_PIXEL     1
 
 // DMA usage
 //   0 - DMA is not used
@@ -42,8 +42,8 @@
 #define SCR_H                 (uint8_t)64  // height
 
 // SH1106 command definitions
-#define SH1106_CMD_setMUX    (uint8_t)0xA8 // set multiplex ratio (N, number of lines active on display)
-#define SH1106_CMD_setOFFS   (uint8_t)0xD3 // set display offset
+#define SH1106_CMD_SETMUX    (uint8_t)0xA8 // set multiplex ratio (N, number of lines active on display)
+#define SH1106_CMD_SETOFFS   (uint8_t)0xD3 // set display offset
 #define SH1106_CMD_STARTLINE (uint8_t)0x40 // set display start line
 #define SH1106_CMD_SEG_NORM  (uint8_t)0xA0 // Column 0 is mapped to SEG0 (x coordinate normal)
 #define SH1106_CMD_SEG_INV   (uint8_t)0xA1 // Column 127 is mapped to SEG0 (x coordinate inverted)
@@ -156,6 +156,8 @@ void SH1106_setDisplayState(uint8_t disp_state);
 void SH1106_setXDir(uint8_t x_map);
 void SH1106_setYDir(uint8_t y_map);
 void SH1106_orientation(uint8_t orientation);
+
+void SH1106_clear(void);
 
 void SH1106_flush(void);
 #if (SH1106_USE_DMA)

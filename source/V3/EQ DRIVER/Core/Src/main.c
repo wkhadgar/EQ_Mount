@@ -26,6 +26,7 @@
 /* USER CODE BEGIN Includes */
 #include "variables.h"
 #include "sh1106.h"
+#include "font5x7.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -103,8 +104,9 @@ int main(void)
 	const uint8_t DEBOUNCE_DELAY_MS = 10;
 	uint32_t last_move_ticks = 0; //to track time passed in ms with HAL_GetTick()
 	SH1106_Init();
-	HAL_Delay(2500);
-	SH1106_setAllPixelsOn(1);
+	HAL_Delay(500);
+	SH1106_setAllPixelsOn(0);
+	SH1106_clear();
 
   /* USER CODE END 2 */
 
@@ -119,9 +121,10 @@ int main(void)
 			reset_flag(rotary_trigged);
 			if ((HAL_GetTick() - last_move_ticks) >= DEBOUNCE_DELAY_MS)	{
 
-				digitalToggle(OUT_RA_DIR);
-				SH1106_drawCircle(64, 32, 30);
-				SH1106_flush();
+				//digitalToggle(OUT_RA_DIR);
+
+				SH1106_drawCircle(64, 32, 10);
+
 				last_move_ticks = HAL_GetTick();
 			}
 		}
@@ -130,10 +133,14 @@ int main(void)
 			reset_flag(selected);
 			if ((HAL_GetTick() - last_move_ticks) >= DEBOUNCE_DELAY_MS)	{
 
-				digitalToggle(OUT_RA_STEP);
+				//digitalToggle(OUT_RA_STEP);
+				SH1106_printStr(2, 2, &"Hello Mundo!!", &Font5x7);
+
 				last_move_ticks = HAL_GetTick();
 			}
 		}
+
+		SH1106_flush();
 	}
   /* USER CODE END 3 */
 }

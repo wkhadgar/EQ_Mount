@@ -29,18 +29,20 @@ static const uint8_t LUT_LB[] =
 //   cmd - display command
 static void SH1106_cmd(uint8_t cmd) {
 	// Send command to display
-	uint8_t command[2] = { 0x00, cmd };
-	HAL_I2C_Master_Transmit(&SH1106_I2C_PORT, SH1106_ADDR << 1, command, 2, 10);
+	uint8_t command[] = { 0x00, cmd };
+	HAL_I2C_Master_Transmit(&SH1106_I2C_PORT, SH1106_ADDR << 1, command,
+			sizeof(command), 10);
 }
 
 // Send double byte command to display
 // input:
 //   cmd1 - first byte of double-byte command
 //   cmd2 - second byte of double-byte command
-static void SH1106_cmd_double(uint8_t cmd1, uint8_t cmd2) {
+static void SH1106_data(uint8_t cmd1) {
 	// Send double byte command to display
-	SH1106_cmd(cmd1);
-	SH1106_cmd(cmd2);
+	int8_t command[] = { 0x40, cmd1 };
+	HAL_I2C_Master_Transmit(&SH1106_I2C_PORT, SH1106_ADDR << 1, command,
+			sizeof(command), 10);
 }
 
 // Initialize SDA peripheral and SH1106 display
@@ -52,53 +54,64 @@ void SH1106_Init(void) {
 	// display off
 	SH1106_cmd(0xAE);
 
-	// set clock divide ratio and oscillator frequency
-	// bits[3:0] defines the divide ratio of the display clocks (bits[3:0] + 1)
-	// bits[7:4] set the oscillator frequency (Fosc), frequency increases with the value of these bits
-	// 0xF0 value gives maximum frequency (maximum Fosc without divider)
-	// 0x0F value gives minimum frequency (minimum Fosc divided by 16)
-	// The higher display frequency decreases image flickering but increases current consumption and vice versa
-	SH1106_cmd_double(SH1106_CMD_CLOCKDIV, 0xF0);
+	//collumns
+	SH1106_cmd(0x02);
+	SH1106_cmd(0x10);
 
-	// set multiplex ratio (visible lines)
-	SH1106_cmd_double(SH1106_CMD_setMUX, 0x3F); // 64MUX
+	//start line
+	SH1106_cmd(0x40);
 
-	// set display offset (offset of first line from the top of display)
-	SH1106_cmd_double(SH1106_CMD_setOFFS, 0x00); // Offset: 0
+	//page address
+	SH1106_cmd(0xB0);
 
-	// set display start line (first line displayed)
-	SH1106_cmd(SH1106_CMD_STARTLINE | 0x00); // Start line: 0
+	SH1106_cmd(SH1106_CMD_CONTRAST); // Contrast: middle level
+	SH1106_cmd(0xD0);
 
-	// set charge pump
-	SH1106_cmd_double(0xAD, 0x8A);
+	// Set segment re-map (X coordinate)
+	SH1106_cmd(SH1106_CMD_SEG_NORM + 1);
 
-	// set segment re-map (x coordinate)
-	SH1106_cmd(SH1106_CMD_SEG_NORM);
+	// Disable entire display ON
+	SH1106_cmd(SH1106_CMD_EDOFF); // Display follows RAM content
 
-	// set COM output scan direction (y coordinate)
-	SH1106_cmd(SH1106_CMD_COM_NORM);
+	// Disable display inversion
+	SH1106_cmd(SH1106_CMD_INV_OFF); // Normal display mode
 
-	// set COM pins hardware configuration
+	// 64MUX
+	SH1106_cmd(SH1106_CMD_SETMUX);
+	SH1106_cmd(0x3F);
+
+	//dc-dc on
+	SH1106_cmd(0xAD);
+	SH1106_cmd(0x8B);
+
+	SH1106_cmd(0x33);
+
+	// Set COM output scan direction (Y coordinate)
+	SH1106_cmd(0xc8);
+
+	//offset
+	SH1106_cmd(0xD3);
+	SH1106_cmd(0x00);
+
+	//CLK
+	SH1106_cmd(0xD5);
+	SH1106_cmd(0xF0);
+
+	//pre charge
+	SH1106_cmd(0xD9);
+	SH1106_cmd(0x22);
+
+	// Set COM pins hardware configuration
 	// bit[4]: reset - sequential COM pin configuration
 	//         set   - alternative COM pin configuration (reset value)
 	// bit[5]: reset - disable COM left/right remap (reset value)
 	//         set   - enable COM left/right remap
-	SH1106_cmd_double(SH1106_CMD_COM_HW, 0x12);
+	SH1106_cmd(SH1106_CMD_COM_HW);
+	SH1106_cmd(0x12);
 
-	// set contrast control
-	SH1106_cmd_double(SH1106_CMD_CONTRAST, 0xFF); // Contrast: max level
-
-	// set pre-charge period
-	SH1106_cmd_double(0xD9, 0x1F);
-
-	// set VCOMH deselect
-	SH1106_cmd_double(0xDB, 0x40);
-
-	// set VPP
-	SH1106_cmd(0x33);
-
-	// Disable display inversion
-	//SH1106_cmd(SH1106_CMD_INV_ON); // Normal display mode
+	//VCOM deselect
+	SH1106_cmd(0xDB);
+	SH1106_cmd(0x40);
 
 	HAL_Delay(100);
 
@@ -201,27 +214,29 @@ void SH1106_orientation(uint8_t orientation) {
 	scr_orientation = orientation;
 }
 
+void SH1106_clear(void) {
+	int i, n;
+	for (i = 0; i < 8; i++) {
+		SH1106_cmd(0xb0 + i);
+		SH1106_cmd(0x02);
+		SH1106_cmd(0x10);
+		for (n = 0; n < 128; n++) {
+			SH1106_data(0x00);
+		}
+	}
+}
+
 // Send vRAM buffer into display
 
 void SH1106_flush(void) {
-
-	const uint32_t bits_h = SCR_H >> 3;
-
-	uint8_t ram_pointer[] = {
-	SH1106_CMD_COL_LOW | 0x02,
-	SH1106_CMD_COL_HIGH, 0 };
-
-	uint8_t *page_addr = &ram_pointer[2];
-
-	for (register uint32_t page = 0; page < bits_h; ++page) {
-		(*page_addr) = SH1106_CMD_PAGE_ADDR | page;
-		HAL_I2C_Master_Transmit(&SH1106_I2C_PORT, SH1106_ADDR << 1,
-				(uint8_t*) ram_pointer, sizeof(ram_pointer), 1000);
-
-		uint8_t *vram = &vRAM[page * SCR_W ];
-
-		HAL_I2C_Master_Transmit(&SH1106_I2C_PORT, SH1106_ADDR << 1, vram, SCR_W,
-				1000);
+	int i, n;
+	for (i = 0; i < 8; i++) {
+		SH1106_cmd(0xb0 + i);
+		SH1106_cmd(0x02);
+		SH1106_cmd(0x10);
+		for (n = 0; n < 128; n++) {
+			SH1106_data(vRAM[i * 128 + n]);
+		}
 	}
 }
 
@@ -229,10 +244,14 @@ void SH1106_flush(void) {
 // input:
 //   pattern - byte to fill vRAM buffer
 void SH1106_fill(uint8_t pattern) {
-	uint16_t i;
-
-	for (i = (SCR_W * SCR_H ) >> 3; i--;) {
-		vRAM[i] = pattern;
+	int i, n;
+	for (i = 0; i < 8; i++) {
+		SH1106_cmd(0xb0 + i);
+		SH1106_cmd(0x02);
+		SH1106_cmd(0x10);
+		for (n = 0; n < 128; n++) {
+			SH1106_data(pattern);
+		}
 	}
 }
 
@@ -324,15 +343,21 @@ void SH1106_pixel(uint8_t x, uint8_t y, uint8_t Mode) {
 
 #if (SH1106_USE_BITBAND)
 	switch (Mode) {
-		case SH1106_PRES:
-			*(uint32_t *)(SRAM_BB_BASE + (((uint32_t)((void *)(&vRAM[offset])) - SRAM_BASE) << 5) + (bpos << 2))  = 0;
-			break;
-		case SH1106_PINV:
-			*(uint32_t *)(SRAM_BB_BASE + (((uint32_t)((void *)(&vRAM[offset])) - SRAM_BASE) << 5) + (bpos << 2)) ^= 1;
-			break;
-		default:
-			*(uint32_t *)(SRAM_BB_BASE + (((uint32_t)((void *)(&vRAM[offset])) - SRAM_BASE) << 5) + (bpos << 2))  = 1;
-			break;
+	case SH1106_PRES:
+		*(uint32_t*) (SRAM_BB_BASE
+				+ (((uint32_t) ((void*) (&vRAM[offset])) - SRAM_BASE) << 5)
+				+ (bpos << 2)) = 0;
+		break;
+	case SH1106_PINV:
+		*(uint32_t*) (SRAM_BB_BASE
+				+ (((uint32_t) ((void*) (&vRAM[offset])) - SRAM_BASE) << 5)
+				+ (bpos << 2)) ^= 1;
+		break;
+	default:
+		*(uint32_t*) (SRAM_BB_BASE
+				+ (((uint32_t) ((void*) (&vRAM[offset])) - SRAM_BASE) << 5)
+				+ (bpos << 2)) = 1;
+		break;
 	}
 #else // (SH1106_USE_BITBAND)
 	switch (Mode) {
