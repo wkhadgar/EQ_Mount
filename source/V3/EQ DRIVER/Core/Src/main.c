@@ -27,6 +27,8 @@
 #include "variables.h"
 #include "sh1106.h"
 #include "font5x7.h"
+#include "font7x10.h"
+#include "horse_run.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,6 +38,12 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#ifdef FONT_5X7
+#define DEFAULT_FONT &Font5x7
+#endif
+#ifdef FONT_7X10
+#define DEFAULT_FONT &Font7x10
+#endif
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,8 +68,8 @@ void SystemClock_Config(void);
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == ROTARY_TRIG_Pin)	{
-		if (ROTARY_CLKW_GPIO_Port->IDR & ROTARY_CLKW_Pin)	set_flag(clockwise);
-		set_flag(rotary_trigged);
+		set_flag(rotary_triggered);
+		if (ROTARY_CLKW_GPIO_Port->IDR & ROTARY_CLKW_Pin)	set_flag(ccw);
 	}
 	else if (GPIO_Pin == SELECT_Pin)	{
 		set_flag(selected);
@@ -102,12 +110,14 @@ int main(void)
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
 
+  	uint8_t frame = 0;
 	const uint8_t DEBOUNCE_DELAY_MS = 10;
 	uint32_t last_move_ticks = 0; //to track time passed in ms with HAL_GetTick()
+
 	SH1106_Init();
 	SH1106_setAllPixelsOn(0);
 	SH1106_clear();
-	bool_t toggle = 0;
+	SH1106_flush();
 
   /* USER CODE END 2 */
 
@@ -117,21 +127,27 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+		SH1106_clear();
 
-		if (get_flag(rotary_trigged))	{ //rotary encoder trigged
-			reset_flag(rotary_trigged);
+		if (get_flag(rotary_triggered))	{ //rotary encoder triggered
+			reset_flag(rotary_triggered);
 			if ((HAL_GetTick() - last_move_ticks) >= DEBOUNCE_DELAY_MS)	{
 
+				set_flag(update_display);
 				//digitalToggle(OUT_RA_DIR);
 
-				if (get_flag(clockwise))	{
-					reset_flag(clockwise);
-					SH1106_drawCircle(64, 32, 10);
+				if (get_flag(ccw))	{
+					reset_flag(ccw);
+
+					if (incremented_var(rot_value, 0) > 0)	{
+						incremented_var(rot_value, -1);
+					}
 				}
-				else	{
-					toggle = !toggle;
-					SH1106_setInvert(toggle);
+				else	{ //clockwise rotation
+					incremented_var(rot_value, 1);
 				}
+
+				SH1106_drawCircle(64, 32, incremented_var(rot_value, 0));
 
 				last_move_ticks = HAL_GetTick();
 			}
@@ -140,14 +156,22 @@ int main(void)
 		else if (get_flag(selected))	{ //rotary encoder trigged
 			reset_flag(selected);
 			if ((HAL_GetTick() - last_move_ticks) >= DEBOUNCE_DELAY_MS)	{
+				SH1106_setContrast(255);
 
+				set_flag(update_display);
 				//digitalToggle(OUT_RA_STEP);
-				SH1106_printStr(2, 2, &"Hello Mundo!!", &Font5x7);
-
+				//SH1106_printStr(2, 2, "Hello Mundo!!", DEFAULT_FONT);
 				last_move_ticks = HAL_GetTick();
 			}
 		}
 
+		if (get_flag(update_display))	{
+			reset_flag(update_display);
+			SH1106_flush();
+		}
+
+		if (frame > 14) frame = 0;
+		SH1106_drawBitmapFullscreen(horses[frame++]);
 		SH1106_flush();
 	}
   /* USER CODE END 3 */

@@ -11,11 +11,16 @@
 #include "main.h"
 
 typedef enum {
-	selected, rotary_trigged, clockwise, _IRQ_vars_amount,
+	selected,
+	rotary_triggered,
+	ccw,
+	update_display,
+	_IRQ_vars_amount,
 } bool_var_t;
 
 typedef enum {
-	rot_value, _INT_vars_amount,
+	rot_value,
+	_INT_vars_amount,
 } int_var_t;
 
 volatile static bool_t boolVariables[_IRQ_vars_amount] = { 0 };
@@ -27,6 +32,6 @@ void set_flag(bool_var_t bool_var);
 
 void reset_flag(bool_var_t bool_var);
 
-int increment_var(int_var_t int_var, int8_t increment);
+int incremented_var(int_var_t int_var, int8_t increment);
 
 #endif /* INC_VARIABLES_H_ */

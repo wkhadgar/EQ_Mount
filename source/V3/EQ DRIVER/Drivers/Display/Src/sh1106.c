@@ -29,20 +29,19 @@ static const uint8_t LUT_LB[] =
 //   cmd - display command
 static void SH1106_cmd(uint8_t cmd) {
 	// Send command to display
-	uint8_t command[] = { 0x00, cmd };
+	uint8_t command[] = {0x00, cmd};
 	HAL_I2C_Master_Transmit(&SH1106_I2C_PORT, SH1106_ADDR << 1, command,
 			sizeof(command), 10);
 }
 
 // Send double byte command to display
 // input:
-//   cmd1 - first byte of double-byte command
-//   cmd2 - second byte of double-byte command
-static void SH1106_data(uint8_t cmd1) {
+//   data - page buffer data with 0x40 blocks
+//   num_bytes - number of bytes to display in the page
+static void SH1106_data(uint8_t* data, uint8_t num_bytes) {
 	// Send double byte command to display
-	int8_t command[] = { 0x40, cmd1 };
-	HAL_I2C_Master_Transmit(&SH1106_I2C_PORT, SH1106_ADDR << 1, command,
-			sizeof(command), 10);
+	HAL_I2C_Master_Transmit(&SH1106_I2C_PORT, SH1106_ADDR << 1, data,
+			num_bytes, 10);
 }
 
 // Initialize SDA peripheral and SH1106 display
@@ -51,55 +50,42 @@ void SH1106_Init(void) {
 	// Initial display configuration
 	HAL_Delay(100);
 
-	// display off
-	SH1106_cmd(0xAE);
+	SH1106_cmd(SH1106_CMD_DISP_OFF);
 
-	//collumns
-	SH1106_cmd(0x02);
-	SH1106_cmd(0x10);
+	SH1106_cmd(SH1106_CMD_COL_LOW);
+	SH1106_cmd(SH1106_CMD_COL_HIGH);
 
-	//start line
-	SH1106_cmd(0x40);
+	SH1106_cmd(SH1106_CMD_STARTLINE);
 
-	//page address
-	SH1106_cmd(0xB0);
+	SH1106_cmd(SH1106_CMD_PAGE_ADDR);
 
-	SH1106_cmd(SH1106_CMD_CONTRAST); // Contrast: middle level
-	SH1106_cmd(0xD0);
+	SH1106_cmd(SH1106_CMD_CONTRAST);
+	SH1106_cmd(0x00); // 0x00...0xff
 
-	// Set segment re-map (X coordinate)
 	SH1106_cmd(SH1106_CMD_SEG_NORM + 1);
 
-	// Disable entire display ON
 	SH1106_cmd(SH1106_CMD_EDOFF); // Display follows RAM content
 
-	// Disable display inversion
 	SH1106_cmd(SH1106_CMD_INV_OFF); // Normal display mode
 
-	// 64MUX
 	SH1106_cmd(SH1106_CMD_SETMUX);
-	SH1106_cmd(0x3F);
+	SH1106_cmd(0x3F); // 63 -> 64mux
 
-	//dc-dc on
-	SH1106_cmd(0xAD);
-	SH1106_cmd(0x8B);
+	SH1106_cmd(SH1106_CMD_DC_DC_SET);
+	SH1106_cmd(0x8B); // on
+	SH1106_cmd(0x32); // 8v
 
-	SH1106_cmd(0x33);
 
-	// Set COM output scan direction (Y coordinate)
-	SH1106_cmd(0xc8);
+	SH1106_cmd(SH1106_CMD_COM_INV);
 
-	//offset
-	SH1106_cmd(0xD3);
-	SH1106_cmd(0x00);
+	SH1106_cmd(SH1106_CMD_SETOFFS);
+	SH1106_cmd(0x00); // 0px
 
-	//CLK
-	SH1106_cmd(0xD5);
-	SH1106_cmd(0xF0);
+	SH1106_cmd(SH1106_CMD_CLOCKDIV);
+	SH1106_cmd(0xF0); // ~100Hz
 
-	//pre charge
-	SH1106_cmd(0xD9);
-	SH1106_cmd(0x22);
+	SH1106_cmd(SH1106_CMD_SET_CHARGE);
+	SH1106_cmd(0x2A); //4MSb are discharge ticks and 4LSb are pre charge ticks
 
 	// Set COM pins hardware configuration
 	// bit[4]: reset - sequential COM pin configuration
@@ -109,24 +95,22 @@ void SH1106_Init(void) {
 	SH1106_cmd(SH1106_CMD_COM_HW);
 	SH1106_cmd(0x12);
 
-	//VCOM deselect
 	SH1106_cmd(0xDB);
 	SH1106_cmd(0x40);
 
 	HAL_Delay(100);
 
-	// Display ON
 	SH1106_cmd(SH1106_CMD_DISP_ON); // Display enabled
 
 	HAL_Delay(100);
-
 }
 
 // set display contrast
 // input:
 //   contrast - new contrast value (0x00..0xff)
 void SH1106_setContrast(uint8_t contrast) {
-	SH1106_cmd_double(SH1106_CMD_CONTRAST, contrast);
+	SH1106_cmd(SH1106_CMD_CONTRAST);
+	SH1106_cmd(contrast);
 }
 
 // set entire LCD pixels on or off
@@ -214,29 +198,29 @@ void SH1106_orientation(uint8_t orientation) {
 	scr_orientation = orientation;
 }
 
+// clear vRAM buffer
 void SH1106_clear(void) {
-	int i, n;
-	for (i = 0; i < 8; i++) {
-		SH1106_cmd(0xb0 + i);
-		SH1106_cmd(0x02);
-		SH1106_cmd(0x10);
-		for (n = 0; n < 128; n++) {
-			SH1106_data(0x00);
-		}
+	uint8_t page;
+	static uint8_t null_buff[SCR_W] = {0x00};
+	for (page = 0; page < 8; page++)	{
+		memcpy(vRAM + (page << 7), null_buff, SCR_W);
 	}
 }
 
 // Send vRAM buffer into display
-
 void SH1106_flush(void) {
-	int i, n;
-	for (i = 0; i < 8; i++) {
-		SH1106_cmd(0xb0 + i);
-		SH1106_cmd(0x02);
-		SH1106_cmd(0x10);
-		for (n = 0; n < 128; n++) {
-			SH1106_data(vRAM[i * 128 + n]);
-		}
+	uint8_t page;
+	static uint8_t screen_buffer[SCR_W + 1] = {0x40};
+	for (page = 0; page < 8; page++) {
+
+		uint8_t* page_content = vRAM + (page << 7);
+		memcpy(screen_buffer + 1, page_content, SCR_W);
+
+		SH1106_cmd(SH1106_CMD_PAGE_ADDR + page);
+		SH1106_cmd(SH1106_CMD_COL_LOW);
+		SH1106_cmd(SH1106_CMD_COL_HIGH);
+
+		SH1106_data(screen_buffer, sizeof(screen_buffer));
 	}
 }
 
@@ -244,14 +228,12 @@ void SH1106_flush(void) {
 // input:
 //   pattern - byte to fill vRAM buffer
 void SH1106_fill(uint8_t pattern) {
-	int i, n;
-	for (i = 0; i < 8; i++) {
-		SH1106_cmd(0xb0 + i);
-		SH1106_cmd(0x02);
-		SH1106_cmd(0x10);
-		for (n = 0; n < 128; n++) {
-			SH1106_data(pattern);
-		}
+	uint8_t page;
+	static uint8_t fill_buff[SCR_W] = {0x00};
+	memset(fill_buff, pattern, sizeof(fill_buff));
+
+	for (page = 0; page < 8; page++)	{
+		memcpy(vRAM + (page << 7), fill_buff, SCR_W);
 	}
 }
 
@@ -1129,11 +1111,11 @@ uint8_t SH1106_printHex(uint8_t x, uint8_t y, uint32_t num,
 
 	// Convert number to characters
 	do {
-		*pStr = (num % 0x10) + '0';
+		*pStr = (num % SH1106_CMD_COL_HIGH) + '0';
 		if (*pStr > '9')
 			*pStr += 7;
 		pStr++;
-	} while (num /= 0x10);
+	} while (num /= SH1106_CMD_COL_HIGH);
 
 	// Draw a number
 	while (*--pStr)

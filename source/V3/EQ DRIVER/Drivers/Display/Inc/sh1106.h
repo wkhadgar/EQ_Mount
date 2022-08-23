@@ -10,7 +10,7 @@
 // Use bit-banding to draw pixel
 //   0 - use logic operations to set pixel color
 //   1 - use bit-banding to set pixel color
-#define SH1106_USE_BITBAND   1
+#define SH1106_USE_BITBAND   0
 
 // Pixel set function definition
 //   0 - call pixel function (less code size in cost of speed)
@@ -58,18 +58,19 @@
 #define SH1106_CMD_CLOCKDIV  (uint8_t)0xD5 // set display clock divide ratio/oscillator frequency
 #define SH1106_CMD_DISP_ON   (uint8_t)0xAF // Display ON
 #define SH1106_CMD_DISP_OFF  (uint8_t)0xAE // Display OFF (sleep mode)
+#define SH1106_CMD_DC_DC_SET (uint8_t)0xAD // DC-DC pump control mode set
 
-#define SH1106_CMD_COL_LOW   (uint8_t)0x00 // set Lower Column Address
+#define SH1106_CMD_COL_LOW   (uint8_t)0x02 // set Lower Column Address
 #define SH1106_CMD_COL_HIGH  (uint8_t)0x10 // set Higher Column Address
 #define SH1106_CMD_PAGE_ADDR (uint8_t)0xB0 // set Page Address
 
-#define SH1106_CMD_CHARGE    (uint8_t)0x22 //  Dis-charge / Pre-charge Period
-#define SH1106_CMD_SCRL_HR   (uint8_t)0x26 // setup continuous horizontal scroll right
-#define SH1106_CMD_SCRL_HL   (uint8_t)0x27 // setup continuous horizontal scroll left
-#define SH1106_CMD_SCRL_VHR  (uint8_t)0x29 // setup continuous vertical and horizontal scroll right
-#define SH1106_CMD_SCRL_VHL  (uint8_t)0x2A // setup continuous vertical and horizontal scroll left
-#define SH1106_CMD_SCRL_STOP (uint8_t)0x2E // Deactivate scroll
-#define SH1106_CMD_SCRL_ACT  (uint8_t)0x2F // Activate scroll
+#define SH1106_CMD_SET_CHARGE   (uint8_t)0xD9 //  Dis-charge / Pre-charge Period
+#define SH1106_CMD_SCRL_HR   	(uint8_t)0x26 // setup continuous horizontal scroll right
+#define SH1106_CMD_SCRL_HL   	(uint8_t)0x27 // setup continuous horizontal scroll left
+#define SH1106_CMD_SCRL_VHR  	(uint8_t)0x29 // setup continuous vertical and horizontal scroll right
+#define SH1106_CMD_SCRL_VHL  	(uint8_t)0x2A // setup continuous vertical and horizontal scroll left
+#define SH1106_CMD_SCRL_STOP 	(uint8_t)0x2E // Deactivate scroll
+#define SH1106_CMD_SCRL_ACT  	(uint8_t)0x2F // Activate scroll
 
 // Entire display on/off enumeration
 enum {
@@ -146,7 +147,6 @@ extern uint8_t SH1106_PixelMode;
 extern I2C_HandleTypeDef hi2c1;
 
 // Function prototypes
-//void SH1106_InitGPIO(void);
 void SH1106_Init(void);
 
 void SH1106_setContrast(uint8_t contrast);
