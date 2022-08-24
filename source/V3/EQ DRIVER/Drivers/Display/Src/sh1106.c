@@ -237,6 +237,14 @@ void SH1106_fill(uint8_t pattern) {
 	}
 }
 
+//init routine grouped in one function
+void SH1106_cleanInit(void)	{
+	SH1106_Init();
+	SH1106_setAllPixelsOn(0);
+	SH1106_clear();
+	SH1106_flush();
+}
+
 // Horizontal scroll setup
 // input:
 //   dir - scroll direction (one of SH1106_scroll_XXX values)

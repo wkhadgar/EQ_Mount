@@ -2,6 +2,7 @@
 #define __SH1106_H
 
 #include "stm32f1xx_hal.h"
+#include "Fonts.h"
 
 // SH1106 display connection:
 //   PB6 --> SCL
@@ -121,24 +122,6 @@ enum {
 	SH1106_PINV = 0x02  // Invert pixel
 };
 
-// Font structure scan lines enumeration
-enum {
-	FONT_V = (uint8_t) 0,        // Vertical font scan lines
-	FONT_H = (uint8_t) (!FONT_V) // Horizontal font scan lines
-};
-
-// Font descriptor
-typedef struct {
-	uint8_t font_Width;       // Width of character
-	uint8_t font_Height;      // Height of character
-	uint8_t font_BPC;         // Bytes for one character
-	uint8_t font_Scan;        // Font scan lines behavior
-	uint8_t font_MinChar;     // Code of the first known symbol
-	uint8_t font_MaxChar;     // Code of the last known symbol
-	uint8_t font_UnknownChar; // Code of the unknown symbol
-	uint8_t font_Data[];      // Font data
-} Font_TypeDef;
-
 // Public variables
 extern uint16_t scr_width;
 extern uint16_t scr_height;
@@ -165,6 +148,8 @@ void SH1106_flush_DMA(void);
 #endif // SH1106_USE_DMA
 
 void SH1106_fill(uint8_t pattern);
+
+void SH1106_cleanInit(void);
 
 void SH1106_scrollHSetup(uint8_t dir, uint8_t start, uint8_t end,
 		uint8_t interval);
