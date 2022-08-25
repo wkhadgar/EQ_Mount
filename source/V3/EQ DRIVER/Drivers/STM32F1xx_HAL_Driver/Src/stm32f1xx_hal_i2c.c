@@ -1153,7 +1153,7 @@ HAL_StatusTypeDef HAL_I2C_Master_Transmit(I2C_HandleTypeDef *hi2c, uint16_t DevA
   }
   else
   {
-    return HAL_BUSY;
+     return HAL_BUSY;
   }
 }
 

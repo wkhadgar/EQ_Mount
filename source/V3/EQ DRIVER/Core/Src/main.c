@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "horse_run.h"
+#include "horse_running.h"
 #include "sh1106.h"
 #include "variables.h"
 
@@ -135,7 +135,6 @@ int main(void) {
   uint8_t frame = 0;
   uint16_t rot_val = 0;
 
-  SH1106_cleanInit();
 
   /* USER CODE END Init */
 
@@ -151,15 +150,17 @@ int main(void) {
   MX_I2C1_Init();
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
+
+  SH1106_cleanInit();
   uint16_t data_readed = 0;
 
-  BKP_TypeDef * DRx = BKP;
 
   //enabling bkp write
-  RCC_TypeDef* RCCAPB = RCC;
-  PWR_TypeDef* PWR_C = PWR;
-  RCCAPB->APB1ENR |= (0b11 << 27);
-  PWR->CR |= (1 << 8);
+  //BKP_TypeDef * DRx = BKP;
+  //RCC_TypeDef* RCCAPB = RCC;
+  //PWR_TypeDef* PWR_C = PWR;
+  //RCCAPB->APB1ENR &= ~(0b11 << 27);
+  //PWR->CR &= ~(1 << 8);
 
   /* USER CODE END 2 */
 
@@ -168,14 +169,14 @@ int main(void) {
   while (1) {
     /* USER CODE END WHILE */
 
-	data_readed = (DRx->DR1 << 16) >> 16;
+	//data_readed = (DRx->DR1 << 16) >> 16;
     /* USER CODE BEGIN 3 */
     rot_val = incremented_var(rot_value, 0);
 
     if (toggle_horse) {
       if (frame > 14)
         frame = 0;
-      SH1106_drawBitmapFullscreen(horses[frame++]);
+      SH1106_drawBitmapFullscreen(horse_running[frame++]);
       SH1106_flush();
       HAL_Delay(2);
     }
@@ -212,7 +213,7 @@ int main(void) {
         set_flag(update_display);
         toggle_horse = !toggle_horse;
 
-        DRx->DR1 |= 0b1010;
+        //DRx->DR1 &= ~0b1010;
 
         last_move_ticks = TICKS_NOW;
       }
