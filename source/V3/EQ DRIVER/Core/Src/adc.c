@@ -44,7 +44,7 @@ void MX_ADC2_Init(void)
   */
   hadc2.Instance = ADC2;
   hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.ContinuousConvMode = ENABLE;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
@@ -119,4 +119,19 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 
 /* USER CODE BEGIN 1 */
 
+/*
+ * @brief: reads the analog input on battery vcc and returns the voltage based on the given vref x 100
+ * @param VREFH_x100: the given reference voltage max to convert the raw adc reading into, times 100 for float avoiding.
+ * @retval: converted adc reading into the voltage reference frame, only scaled by 10 times.
+ */
+uint16_t voltage_read(uint16_t VREFH_x10)	{
+	uint32_t v = 0;
+	HAL_ADC_PollForConversion(&hadc2, 100);
+	for (uint8_t samples = 0; samples < 64; samples++)	{
+		v += HAL_ADC_GetValue(&hadc2);
+	}
+	v >>= 6; // v / 64
+	v = (v*VREFH_x10)/4025; //correlates analog read to voltage value
+	return v;
+}
 /* USER CODE END 1 */

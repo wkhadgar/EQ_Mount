@@ -19,8 +19,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
-#include "gpio.h"
 #include "i2c.h"
+#include "tim.h"
+#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -40,6 +41,8 @@
 #define ROT_DEBOUNCE_DELAY_MS 10
 #define PUSH_DEBOUNCE_DELAY_MS 300
 #define DEFAULT_FONT fnt5x7
+#define V_BAT_MIN 32 //3.2v * 10
+#define V_BAT_MAX 42 //4.2v * 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -56,6 +59,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+uint8_t get_bat_percentage(void);
 
 /* USER CODE END PFP */
 
@@ -65,8 +69,9 @@ void SystemClock_Config(void);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
   if (GPIO_Pin == ROTARY_TRIG_Pin) {
     set_flag(rotary_triggered);
-    if (ROTARY_CLKW_GPIO_Port->IDR & ROTARY_CLKW_Pin)
-      set_flag(ccw);
+    if (ROTARY_CLKW_GPIO_Port->IDR & ROTARY_CLKW_Pin)	{
+    	set_flag(ccw);
+    }
   } else if (GPIO_Pin == SELECT_Pin) {
     set_flag(selected);
   }
@@ -75,18 +80,18 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
-int main(void) {
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick.
-   */
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -124,6 +129,7 @@ int main(void) {
   uint8_t actual_menu_top_row = 0;
   uint8_t arrow_row = 0;
   uint8_t current_selection;
+  uint8_t battery_charge;
 
   bool_t wake_flag     = False;
   bool_t select_pressed = 0;
@@ -149,9 +155,12 @@ int main(void) {
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_ADC2_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_ADC_Start(&hadc2);
   SH1106_cleanInit();
+
   uint16_t data_readed = 0;
 
 
@@ -169,19 +178,19 @@ int main(void) {
   while (1) {
     /* USER CODE END WHILE */
 
-	//data_readed = (DRx->DR1 << 16) >> 16;
     /* USER CODE BEGIN 3 */
     rot_val = incremented_var(rot_value, 0);
+    battery_charge = get_bat_percentage();
 
     if (toggle_horse) {
-      if (frame > 14)
-        frame = 0;
+      if (frame > 14)	frame = 0;
       SH1106_drawBitmapFullscreen(horse_running[frame++]);
+      SH1106_drawBattery(battery_charge, 105, 2);
       SH1106_flush();
-      HAL_Delay(2);
     }
-
     SH1106_clear();
+
+    SH1106_drawBattery(battery_charge, 105, 2);
 
     if (get_flag(rotary_triggered)) { // rotary encoder triggered
       reset_flag(rotary_triggered);
@@ -228,17 +237,18 @@ int main(void) {
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void) {
+  * @brief System Clock Configuration
+  * @retval None
+  */
+void SystemClock_Config(void)
+{
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -246,42 +256,50 @@ void SystemClock_Config(void) {
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
     Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK |
-                                RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  {
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
   PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
     Error_Handler();
   }
 }
 
 /* USER CODE BEGIN 4 */
-
+uint8_t get_bat_percentage(void)	{
+	uint16_t readed_voltage = voltage_read(5*10); //5v * 10 of reference on board
+	uint8_t percent = ((readed_voltage >= V_BAT_MIN ? readed_voltage : V_BAT_MIN) - V_BAT_MIN) * (100/(V_BAT_MAX - V_BAT_MIN));	// converting [bat_min, bat_max] to [0, 100]
+	return percent;
+}
 /* USER CODE END 4 */
 
 /**
- * @brief  Period elapsed callback in non blocking mode
- * @note   This function is called  when TIM1 interrupt took place, inside
- * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
- * a global variable "uwTick" used as application time base.
- * @param  htim : TIM handle
- * @retval None
- */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
@@ -294,10 +312,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 }
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
-void Error_Handler(void) {
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+void Error_Handler(void)
+{
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
@@ -306,15 +325,16 @@ void Error_Handler(void) {
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
+#ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
-void assert_failed(uint8_t *file, uint32_t line) {
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
+void assert_failed(uint8_t *file, uint32_t line)
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line
      number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,

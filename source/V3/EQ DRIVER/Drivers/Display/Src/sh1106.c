@@ -306,8 +306,7 @@ void SH1106_scrollStop(void) {
 //   x, y - pixel coordinates
 //   Mode - pixel mode (one of SH1106_PXXX values)
 #if (SH1106_OPT_PIXEL)
-__attribute__((always_inline)) void SH1106_pixel(uint8_t x, uint8_t y,
-		uint8_t Mode) {
+__attribute__((always_inline)) void SH1106_pixel(uint8_t x, uint8_t y, uint8_t Mode) {
 #else
 void SH1106_pixel(uint8_t x, uint8_t y, uint8_t Mode) {
 #endif // SH1106_OPT_PIXEL
@@ -725,7 +724,7 @@ void SH1106_drawCircle(int16_t x_, int16_t y_, uint8_t radius) {
 // input:
 //   x_, y_ - coordinates of center of the ellipse
 //   Ra,Rb - horizontal and vertical radiuses
-void SH1106_Ellipse(uint16_t x_, uint16_t y_, uint16_t Ra, uint16_t Rb) {
+void SH1106_drawEllipse(uint16_t x_, uint16_t y_, uint16_t Ra, uint16_t Rb) {
 	int16_t x = 0;
 	int16_t y = Rb;
 	int32_t A2 = Ra * Ra;
@@ -777,6 +776,20 @@ void SH1106_Ellipse(uint16_t x_, uint16_t y_, uint16_t Ra, uint16_t Rb) {
 			y--;
 		}
 	}
+}
+
+/*
+ * @brief: draws a simple 5x20 battery gauge at given position
+ * @param percentage: % of battery to be displayed on the gauge
+ * @param x: topleft x coordinate to draw gauge
+ * @param y: topleft y coordinate to draw gauge
+ */
+void SH1106_drawBattery(uint8_t percentage, uint8_t x, uint8_t y)	{
+	SH1106_drawHLine(x+1, x+19, y); //top
+    SH1106_drawHLine(x+1, x+19, y+4); //bottom
+    SH1106_drawVLine(x, y+1, y+3); //left
+    SH1106_drawVLine(x+20, y+1, y+3); //right
+    SH1106_fillRect(x, y+1, x+(percentage/5), y+3); //percentage for filling
 }
 
 // Draw a single character

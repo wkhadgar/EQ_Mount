@@ -41,7 +41,7 @@ extern ADC_HandleTypeDef hadc2;
 void MX_ADC2_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+uint16_t voltage_read(uint16_t VREFH_x100);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

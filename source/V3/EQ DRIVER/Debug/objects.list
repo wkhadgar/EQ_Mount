@@ -8,6 +8,7 @@
 "./Core/Src/syscalls.o"
 "./Core/Src/sysmem.o"
 "./Core/Src/system_stm32f1xx.o"
+"./Core/Src/tim.o"
 "./Core/Src/variables.o"
 "./Core/Startup/startup_stm32f103c8tx.o"
 "./Drivers/Display/Src/sh1106.o"
