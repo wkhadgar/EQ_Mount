@@ -15,6 +15,11 @@ typedef enum {
 	rotary_triggered,
 	ccw,
 	update_display,
+	wake,
+	sleep,
+	low_battery,
+	toggle_horse,
+	on_menu,
 	_IRQ_vars_amount,
 } bool_var_t;
 

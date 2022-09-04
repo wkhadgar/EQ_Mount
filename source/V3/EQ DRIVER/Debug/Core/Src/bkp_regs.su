@@ -1,0 +1,4 @@
+../Core/Src/bkp_regs.c:14:6:BKP_W_ENABLE	4	static
+../Core/Src/bkp_regs.c:22:6:BKP_W_DISABLE	4	static
+../Core/Src/bkp_regs.c:32:9:BKP_read	32	static
+../Core/Src/bkp_regs.c:52:6:BKP_write	32	static

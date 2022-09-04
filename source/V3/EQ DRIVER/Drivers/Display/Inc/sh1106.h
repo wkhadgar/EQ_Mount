@@ -171,7 +171,7 @@ void SH1106_fillRect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
 void SH1106_drawLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2);
 void SH1106_drawCircle(int16_t x_c, int16_t y_c, uint8_t radius);
 void SH1106_drawEllipse(uint16_t x_, uint16_t y_, uint16_t Ra, uint16_t Rb);
-void SH1106_drawBattery(uint8_t percentage, uint8_t x, uint8_t y);
+void SH1106_drawRoundRectFill(uint8_t fill_percentage, uint8_t x, uint8_t y, uint8_t w, uint8_t h);
 
 uint8_t SH1106_printChar(uint8_t x, uint8_t y, uint8_t ch,
 		const Font_TypeDef *Font);

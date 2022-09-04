@@ -26,8 +26,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "horse_running.h"
+#include "bitmaps.h"
 #include "sh1106.h"
 #include "variables.h"
+#include "bkp_regs.h"
 
 /* USER CODE END Includes */
 
@@ -54,12 +56,52 @@
 
 /* USER CODE BEGIN PV */
 
+//menu options (limited to given size)
+  enum menu_option{
+      DEC_ = 0,
+      RA,
+      hemisphere,
+      automatic_mode,
+      manual_mode,
+      brilho_tela,
+      tempo_tela,
+      save_configs,
+      MENU_SIZE //must be the last value
+  };
+  const char* menu_str[] = {
+      "DEC",
+      "R.A",
+      "Hemisferio",
+      "Modo automatico",
+      "Modo manual",
+      "Contraste",
+      "Luz da tela",
+      "Salvar configs"
+  };
+  uint16_t menu_op_value[MENU_SIZE] = {0};
+  const uint8_t SCREEN_ROWS = 5;
+
+  uint32_t lock_value;
+
+  uint32_t last_move_ticks = 0; // to track time passed in ms with HAL_GetTick()
+  uint32_t ra_last_tick, bat_ticks_update = 0;
+
+
+  uint8_t actual_menu_top_row = 0;
+  uint8_t arrow_row = 0;
+  uint8_t current_selection;
+  uint8_t battery_charge;
+
+  uint8_t frame = 0;
+  uint16_t rot_val = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 uint8_t get_bat_percentage(void);
+int8_t handle_rotary_events(void);
 
 /* USER CODE END PFP */
 
@@ -96,52 +138,6 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
-  //menu options (limited to given size)
-  enum menu_option{
-      DEC_ = 0,
-      RA,
-      hemisphere,
-      automatic_mode,
-      manual_mode,
-      brilho_tela,
-      tempo_tela,
-      save_configs,
-      MENU_SIZE //must be the last value
-  };
-  const char* menu_str[] = {
-      "DEC",
-      "R.A",
-      "Hemisferio",
-      "Modo automatico",
-      "Modo manual",
-      "Contraste",
-      "Luz da tela",
-      "Salvar configs"
-  };
-  uint16_t menu_op_value[MENU_SIZE] = {0};
-  const uint8_t SCREEN_ROWS = 5;
-
-  uint32_t lock_value;
-
-  uint32_t last_move_ticks = 0; // to track time passed in ms with HAL_GetTick()
-  uint32_t ra_last_tick = 0;
-
-  uint8_t actual_menu_top_row = 0;
-  uint8_t arrow_row = 0;
-  uint8_t current_selection;
-  uint8_t battery_charge;
-
-  bool_t wake_flag     = False;
-  bool_t select_pressed = 0;
-  bool_t sleeping = False;
-  bool_t on_menu = 1;
-  bool_t low_battery_flag = False;
-  bool_t toggle_horse = False;
-
-  uint8_t frame = 0;
-  uint16_t rot_val = 0;
-
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -158,18 +154,32 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_ADC_Start(&hadc2);
   SH1106_cleanInit();
 
-  uint16_t data_readed = 0;
+  //data recover
+  battery_charge = get_bat_percentage();
+  menu_op_value[brilho_tela] = BKP_read(0);
+  menu_op_value[hemisphere] = BKP_read(1);
+  menu_op_value[tempo_tela] = BKP_read(2);
 
+  //logo display
+  SH1106_drawBitmapFullscreen(eqmount_logo);
+  SH1106_flush();
+  SH1106_clear();
+  HAL_Delay(2500);
 
-  //enabling bkp write
-  //BKP_TypeDef * DRx = BKP;
-  //RCC_TypeDef* RCCAPB = RCC;
-  //PWR_TypeDef* PWR_C = PWR;
-  //RCCAPB->APB1ENR &= ~(0b11 << 27);
-  //PWR->CR &= ~(1 << 8);
+  //transition fake load
+  SH1106_printStr(16, 15, "Carregando Menu", fnt5x7);
+  for (uint8_t s = 0; s <= 100; s+=2)	{
+	  SH1106_drawRoundRectFill(s, 7, 32, 110, 8);
+	  SH1106_flush();
+	  HAL_Delay(1);
+  }
+  SH1106_clear();
+
+  last_move_ticks = TICKS_NOW; //start time reference
+  ra_last_tick = last_move_ticks;
+  bat_ticks_update = last_move_ticks;
 
   /* USER CODE END 2 */
 
@@ -179,54 +189,29 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    rot_val = incremented_var(rot_value, 0);
-    battery_charge = get_bat_percentage();
 
     if (toggle_horse) {
       if (frame > 14)	frame = 0;
       SH1106_drawBitmapFullscreen(horse_running[frame++]);
-      SH1106_drawBattery(battery_charge, 105, 2);
+      //SH1106_drawRoundRectFill(battery_charge, 105, 2, 20, 5);
       SH1106_flush();
     }
     SH1106_clear();
 
-    SH1106_drawBattery(battery_charge, 105, 2);
 
-    if (get_flag(rotary_triggered)) { // rotary encoder triggered
-      reset_flag(rotary_triggered);
-      if ((TICKS_NOW - last_move_ticks) >= ROT_DEBOUNCE_DELAY_MS) {
-
-        set_flag(update_display);
-        // digitalToggle(OUT_RA_DIR);
-
-        if (get_flag(ccw)) {
-          reset_flag(ccw);
-
-          if (rot_val > 0) {
-            incremented_var(rot_value, -1);
-          }
-        } else { // clockwise rotation
-          incremented_var(rot_value, 1);
-        }
-        SH1106_drawCircle(63, 31, rot_val);
-
-        last_move_ticks = TICKS_NOW;
-      }
+    //battery info
+    if (TICKS_NOW - bat_ticks_update > 10000)	{
+    	battery_charge = get_bat_percentage();
+    	if (battery_charge < 20)	set_flag(low_battery);
+    	bat_ticks_update = TICKS_NOW;
     }
+    SH1106_drawRoundRectFill(battery_charge, 105, 2, 20, 5);
+    if (get_flag(low_battery))	SH1106_drawBitmap(96, 1, 5, 8, alert);
 
-    else if (get_flag(selected)) { // rotary encoder trigged
-      reset_flag(selected);
-      if ((TICKS_NOW - last_move_ticks) >= PUSH_DEBOUNCE_DELAY_MS) {
 
-        SH1106_setContrast(255);
-        set_flag(update_display);
-        toggle_horse = !toggle_horse;
+    rot_val += handle_rotary_events();
 
-        //DRx->DR1 &= ~0b1010;
 
-        last_move_ticks = TICKS_NOW;
-      }
-    }
 
     if (get_flag(update_display)) {
       reset_flag(update_display);
@@ -284,10 +269,52 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 uint8_t get_bat_percentage(void)	{
+	HAL_ADC_Start(&hadc2);
+
 	uint16_t readed_voltage = voltage_read(5*10); //5v * 10 of reference on board
 	uint8_t percent = ((readed_voltage >= V_BAT_MIN ? readed_voltage : V_BAT_MIN) - V_BAT_MIN) * (100/(V_BAT_MAX - V_BAT_MIN));	// converting [bat_min, bat_max] to [0, 100]
+
+	HAL_ADC_Stop(&hadc2);
+
 	return percent;
 }
+
+int8_t handle_rotary_events(void)	{
+	if (get_flag(rotary_triggered)) { // rotary encoder triggered
+	  reset_flag(rotary_triggered);
+	  set_flag(wake);
+
+	  if ((TICKS_NOW - last_move_ticks) >= ROT_DEBOUNCE_DELAY_MS) {
+
+		if (get_flag(ccw)) { //counter-clockwise rotation
+
+		  reset_flag(ccw);
+		  return -1;
+		}
+		else { // clockwise rotation
+		  return 1;
+		}
+
+		last_move_ticks = TICKS_NOW;
+	  }
+	}
+
+	else if (get_flag(selected)) { // rotary encoder pressed
+	  reset_flag(selected);
+	  set_flag(wake);
+
+	  if ((TICKS_NOW - last_move_ticks) >= PUSH_DEBOUNCE_DELAY_MS) {
+
+		SH1106_setContrast(255);
+		if (get_flag(on_menu)) reset_flag(on_menu);
+		else set_flag(on_menu);
+
+		last_move_ticks = TICKS_NOW;
+	  }
+	}
+	return 0;
+}
+
 /* USER CODE END 4 */
 
 /**

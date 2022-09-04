@@ -60,7 +60,7 @@ void SH1106_Init(void) {
 	SH1106_cmd(SH1106_CMD_PAGE_ADDR);
 
 	SH1106_cmd(SH1106_CMD_CONTRAST);
-	SH1106_cmd(0x00); // 0x00...0xff
+	SH1106_cmd(0x88); // 0x00...0xff
 
 	SH1106_cmd(SH1106_CMD_SEG_NORM + 1);
 
@@ -780,16 +780,18 @@ void SH1106_drawEllipse(uint16_t x_, uint16_t y_, uint16_t Ra, uint16_t Rb) {
 
 /*
  * @brief: draws a simple 5x20 battery gauge at given position
- * @param percentage: % of battery to be displayed on the gauge
+ * @param fill_percentage: % of round rect to be displayed as filled on the gauge (left to right)
  * @param x: topleft x coordinate to draw gauge
  * @param y: topleft y coordinate to draw gauge
+ * @param w: width of the gauge
+ * @param h: height of the gauge
  */
-void SH1106_drawBattery(uint8_t percentage, uint8_t x, uint8_t y)	{
-	SH1106_drawHLine(x+1, x+19, y); //top
-    SH1106_drawHLine(x+1, x+19, y+4); //bottom
-    SH1106_drawVLine(x, y+1, y+3); //left
-    SH1106_drawVLine(x+20, y+1, y+3); //right
-    SH1106_fillRect(x, y+1, x+(percentage/5), y+3); //percentage for filling
+void SH1106_drawRoundRectFill(uint8_t fill_percentage, uint8_t x, uint8_t y, uint8_t w, uint8_t h)	{
+	SH1106_drawHLine(x+1, x+(w-1), y); //top
+    SH1106_drawHLine(x+1, x+(w-1), y+(h-1)); //bottom
+    SH1106_drawVLine(x, y+1, y+(h-2)); //left
+    SH1106_drawVLine(x+w, y+1, y+(h-2)); //right
+    SH1106_fillRect(x, y+1, x+(fill_percentage/(100/(float)w)), y+(h-2)); //percentage for filling
 }
 
 // Draw a single character
