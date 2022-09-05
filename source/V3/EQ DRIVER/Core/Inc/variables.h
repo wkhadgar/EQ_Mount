@@ -31,12 +31,31 @@ typedef enum {
 volatile static bool_t boolVariables[_IRQ_vars_amount] = { 0 };
 volatile static int intVariables[_INT_vars_amount] = { 0 };
 
+/**
+ * @brief: gets the boolean value of a flag.
+ * @param bool_var: enum declared value of the flag.
+ * @return True if bool_var is True, False otherwise.
+ */
 bool_t get_flag(bool_var_t bool_var);
 
+/**
+ * @brief: sets a given boolean to True.
+ * @param bool_var: enum declared value of the flag.
+ */
 void set_flag(bool_var_t bool_var);
 
+/**
+ * @brief: sets a given boolean to False.
+ * @param bool_var: enum declared value of the flag.
+ */
 void reset_flag(bool_var_t bool_var);
 
+/**
+ * @brief: increment a int enum declared var and returns its new value.
+ * @param int_var: enum declared int.
+ * @param increment value to increment the int_var.
+ * @return new int_var value.
+ */
 int incremented_var(int_var_t int_var, int8_t increment);
 
 #endif /* INC_VARIABLES_H_ */
