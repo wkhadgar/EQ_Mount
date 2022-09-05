@@ -32,4 +32,5 @@
 *.app
 
 .vscode/
+cmake-build-debug/
 *.code-workspace
