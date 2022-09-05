@@ -32,4 +32,6 @@
 *.app
 
 .vscode/
+cmake-build-debug/
+.idea/
 *.code-workspace
