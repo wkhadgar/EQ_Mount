@@ -20,23 +20,23 @@ typedef enum {
 	low_battery,
 	toggle_horse,
 	on_menu,
-	_IRQ_vars_amount,
+	IRQ_vars_amount,
 } bool_var_t;
 
 typedef enum {
 	rot_value,
-	_INT_vars_amount,
+	INT_vars_amount,
 } int_var_t;
 
-volatile static bool_t boolVariables[_IRQ_vars_amount] = { 0 };
-volatile static int intVariables[_INT_vars_amount] = { 0 };
+volatile static bool boolVariables[IRQ_vars_amount] = { 0 };
+volatile static int intVariables[INT_vars_amount] = { 0 };
 
 /**
  * @brief: gets the boolean value of a flag.
  * @param bool_var: enum declared value of the flag.
  * @return True if bool_var is True, False otherwise.
  */
-bool_t get_flag(bool_var_t bool_var);
+bool get_flag(bool_var_t bool_var);
 
 /**
  * @brief: sets a given boolean to True.
