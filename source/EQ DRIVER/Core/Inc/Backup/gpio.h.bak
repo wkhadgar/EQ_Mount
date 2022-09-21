@@ -43,10 +43,13 @@ void MX_GPIO_Init(void);
 
 typedef enum {
     AN_V_BAT = 0,
+    OUT_LASER,
     OUT_RA_DIR,
     OUT_RA_STEP,
+    OUT_RA_EN,
     OUT_DEC_DIR,
     OUT_DEC_STEP,
+    OUT_DEC_EN,
     IN_SELECT,
     IN_ROTARY_CLKW,
     IN_ROTARY_TRIG,
@@ -56,9 +59,12 @@ typedef enum {
 
 } pin_t;
 
-bool_t digitalRead(pin_t pin);
-void digitalWrite(pin_t pin, bool_t value);
+bool digitalRead(pin_t pin);
+
+void digitalWrite(pin_t pin, bool value);
+
 void digitalToggle(pin_t pin);
+
 void digitalPulse(pin_t pin, uint8_t pulse_ms);
 /* USER CODE END Prototypes */
 

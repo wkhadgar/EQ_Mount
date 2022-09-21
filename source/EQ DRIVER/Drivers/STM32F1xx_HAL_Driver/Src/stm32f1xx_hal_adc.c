@@ -217,7 +217,7 @@
         (++) Hard reset of ADC peripherals
              using macro __ADCx_FORCE_RESET(), __ADCx_RELEASE_RESET().
         (++) ADC clock disable
-             using the equivalent macro/functions as configuration step.
+             using the equivalent macro/functions as configuration half_step.
              (+++) Example:
                    Into HAL_ADC_MspDeInit() (recommended code location) or with
                    other device clock parameters configuration:

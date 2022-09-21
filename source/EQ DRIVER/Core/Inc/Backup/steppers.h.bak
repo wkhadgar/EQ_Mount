@@ -13,17 +13,12 @@ typedef enum motor_axis {
     Focus,
 } motor_axis_t;
 
-typedef enum dir_t {
-    clockwise,
-    counter_clockwise,
-} direction_t;
-
 typedef struct stepper_motor {
     motor_axis_t axis;
     uint16_t position; /** < in relation to the full 200 * MICRO_STEPPING steps */
     uint32_t auto_step_period; /** < in us ; 0 if invalid */
 
-    direction_t direction; /** < whether rotation happens clockwise or not */
+    bool direction; /** < whether rotation happens clockwise or not */
     bool on_status; /** < is the motor being driven right now? */
     bool is_configured;
 
@@ -78,19 +73,19 @@ static stepper_t DEC_STEPPER = {
  * @brief configures a given motor
  *
  * @param s [out] Stepper motor to be configured
+ * @param MICRO_STEPPING Micro-stepping level, must be 1, 2, 4, 8 or 16, according to the hardware selection.
  */
 void stepper_init(stepper_t *s);
 
 /**
- * @brief Do a single motor half_step
+ * @brief Do a single motor step
  *
  * @param s [out] Given stepper motor
+ * @param rising if true, turn the step pin on, if false, turn it off
  * @return uint8_t Final position of the motor, in relation to the configured referencial.
  */
 uint16_t half_step(stepper_t *s);
 
 void stepper_reverse_direction(stepper_t *s);
-
-void stepper_set_direction(stepper_t *s, direction_t dir);
 
 #endif //EQMOUNT_CUSTOM_CONTROLLER_STEPPERS_H

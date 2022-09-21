@@ -28,14 +28,11 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
-#include "stm32f1xx_hal_pwr.h"
-#include "stm32f103xb.h"
-#include <stdint-gcc.h>
-#include <stdbool.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdint.h>
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -63,6 +60,12 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define V_BATTERY_Pin GPIO_PIN_0
 #define V_BATTERY_GPIO_Port GPIOA
+#define FINE_ADJUST_Pin GPIO_PIN_1
+#define FINE_ADJUST_GPIO_Port GPIOA
+#define LASER_ON_Pin GPIO_PIN_3
+#define LASER_ON_GPIO_Port GPIOA
+#define M1_ENABLE_Pin GPIO_PIN_4
+#define M1_ENABLE_GPIO_Port GPIOA
 #define M1_DIR_Pin GPIO_PIN_5
 #define M1_DIR_GPIO_Port GPIOA
 #define M1_STEP_Pin GPIO_PIN_6
@@ -71,6 +74,8 @@ void Error_Handler(void);
 #define M2_DIR_GPIO_Port GPIOA
 #define M2_STEP_Pin GPIO_PIN_0
 #define M2_STEP_GPIO_Port GPIOB
+#define M2_ENABLE_Pin GPIO_PIN_1
+#define M2_ENABLE_GPIO_Port GPIOB
 #define SELECT_Pin GPIO_PIN_12
 #define SELECT_GPIO_Port GPIOB
 #define SELECT_EXTI_IRQn EXTI15_10_IRQn

@@ -30,11 +30,16 @@
 #include "sh1106.h"
 #include "variables.h"
 #include "bkp_regs.h"
+#include "steppers.h"
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef struct rotary_data {
+    int8_t inc;
+    bool was_pressed;
+} rotary_data_t;
 
 /* USER CODE END PTD */
 
@@ -42,16 +47,19 @@
 /* USER CODE BEGIN PD */
 #define ROT_DEBOUNCE_DELAY_MS 10 /** < Delay to accept another rotary move */
 #define PUSH_DEBOUNCE_DELAY_MS 300 /** < Delay to accept another button press */
-#define DEFAULT_FONT fnt5x7
 #define V_BAT_MIN 32 /** < 3.2v * 10 */
 #define V_BAT_MAX 42 /** < 4.2v * 10 */
+#define SCREEN_ROWS 5
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 #define TICKS_NOW HAL_GetTick() /** < Current sys tick value */
-#define SCROLL_DOWN_MENU(menu_top) ((menu_top) < (MENU_SIZE - SCREEN_ROWS)) ? (menu_top)++ : false /** < Increases menu head in-bound */
-#define SCROLL_UP_MENU(menu_top) ((menu_top) > 0) ? (menu_top)-- : false /** < Decreases menu head in-bound */
+#define POSITIVE_MODULUS(value, mod) (((value) < 0) ? ((mod) -1) : ((value) % (mod)))
+#define BOOLIFY(value) ((value) >= 1) ? 1 : 0
+#define SCROLL_DOWN_MENU(menu_top) (((menu_top) < (MENU_SIZE - SCREEN_ROWS)) ? (menu_top)+1 : (menu_top)) /** < Increases menu head in-bound */
+#define SCROLL_UP_MENU(menu_top) (((menu_top) > 0) ? (menu_top)-1 : (menu_top)) /** < Decreases menu head in-bound */
 
 /* USER CODE END PM */
 
@@ -82,7 +90,6 @@ const char *menu_str[] = {
 };
 uint16_t menu_op_value[MENU_SIZE] = {0};
 
-const uint8_t SCREEN_ROWS = 5;
 
 uint32_t last_move_ticks = 0; // to track time passed in ms with HAL_GetTick()
 uint32_t ra_last_tick, bat_ticks_update = 0;
@@ -93,17 +100,19 @@ uint8_t menu_selection = 0;
 uint8_t battery_charge;
 uint8_t frame = 0;
 
+int16_t signed_value_preview = 0;
 uint16_t value_preview = 0;
 uint16_t lock_value = 0;
+
+uint8_t timer_pre_scaler = 1;
 /* USER CODE END PV */
+
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-
 /* USER CODE BEGIN PFP */
 
 #define CURRENT_SELECTION (menu_head+menu_selection)
-
 
 /**
  * @brief Calculates the attached battery to the A_V_BAT pin charge.
@@ -117,7 +126,7 @@ uint8_t get_bat_percentage(void);
  *
  * @retval -1 if the rotary was moved counter-clockwise, 1 if clockwise, 0 if no change happened.
  */
-int8_t handle_rotary_events(void);
+void handle_rotary_events(rotary_data_t *rotary_data);
 
 /**
  * @brief Manage the changes in the menu, updating position variables and value previews.
@@ -127,7 +136,7 @@ int8_t handle_rotary_events(void);
  * @param arrow_row  [out] Value of the selection arrow on menu screen
  * @param increase boolean telling whether to increase or decrease the current screen parameters
  */
-void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t *op_value, bool increase);
+void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t *op_value, int8_t increase);
 
 /* USER CODE END PFP */
 
@@ -177,6 +186,7 @@ int main(void) {
     MX_I2C1_Init();
     MX_ADC2_Init();
     MX_TIM2_Init();
+    MX_ADC1_Init();
     /* USER CODE BEGIN 2 */
 
     SH1106_cleanInit();
@@ -201,11 +211,14 @@ int main(void) {
         HAL_Delay(1);
     }
     SH1106_clear();
+    set_flag(on_menu);
 
     last_move_ticks = TICKS_NOW; /** < start time reference */
-    ra_last_tick = last_move_ticks; /** < RA tracking time reference */
     bat_ticks_update = last_move_ticks; /** < time tracking to help make periodic battery checks */
 
+    stepper_init(&RA_STEPPER);
+    stepper_init(&DEC_STEPPER);
+    HAL_TIM_Base_Start_IT(&htim2);
     /* USER CODE END 2 */
 
     /* Infinite loop */
@@ -215,7 +228,10 @@ int main(void) {
 
         /* USER CODE BEGIN 3 */
 
-        { /** horse running easter egg */
+        SH1106_clear(); /** < clears buffer, to construct new one and flush it later */
+
+        /** horse running easter egg */
+        {
             if (get_flag(toggle_horse)) {
                 if (frame > 14) frame = 0;
                 SH1106_drawBitmapFullscreen(horse_running[frame++]);
@@ -223,9 +239,8 @@ int main(void) {
             }
         }
 
-        SH1106_clear(); /** < clears buffer, to construct new one and flush it later */
-
-        { /** battery info */
+        /** battery info */
+        {
             if (TICKS_NOW - bat_ticks_update > 10000) {
                 battery_charge = get_bat_percentage();
                 if (battery_charge < 20) set_flag(low_battery);
@@ -235,21 +250,178 @@ int main(void) {
             if (get_flag(low_battery)) SH1106_drawBitmap(96, 1, 5, 8, alert);
         }
 
-        handle_menu_changes(&menu_head, &menu_selection, &value_preview, handle_rotary_events());
+        /** updates on menu related values*/
+        {
+            rotary_data_t rotary_events;
+            handle_rotary_events(&rotary_events);
 
-        if (get_flag(on_menu)) {
+            if (rotary_events.was_pressed) {
+                if ((lock_value != value_preview) && get_flag(on_menu)) { //if value changed
+                    menu_op_value[CURRENT_SELECTION] = value_preview; //saves value to menu
+                    lock_value = value_preview;
 
-        } else {
-            uint16_t next_x = SH1106_printStr(2, 2, menu_str[CURRENT_SELECTION], fnt5x7);
-            SH1106_printStr(next_x, 2, ":", fnt5x7);
+                    switch (CURRENT_SELECTION) {
+                        case DEC_:
+                            timer_pre_scaler = menu_op_value[DEC_] + 1;
+                            break;
+                        case hemisphere:
+                            if (menu_op_value[hemisphere]) {
+                                stepper_set_direction(&RA_STEPPER, clockwise);
+                            } else {
+                                stepper_set_direction(&RA_STEPPER, counter_clockwise);
+                            }
+                            break;
+                    }
 
-            next_x = SH1106_printInt(20, 32, value_preview / 60, fnt7x10);
-            next_x = SH1106_printChar(next_x, 27, 'o', fnt7x10); //TODO alterar na lib das fontes o °
-            next_x = SH1106_printInt(next_x, 32, value_preview % 60, fnt7x10);
-            SH1106_printStr(next_x, 32, "'", fnt7x10);
+                } else if (!get_flag(on_menu)) {
+                    value_preview = menu_op_value[CURRENT_SELECTION]; //gets value from menu
+                }
+
+            } else if (rotary_events.inc) {
+                handle_menu_changes(&menu_head, &menu_selection, &value_preview, rotary_events.inc);
+            }
+
+            signed_value_preview = (int16_t) (value_preview - 32765);
         }
 
-        if (get_flag(update_display)) { /** < checks if changes to the buffer happened, and if so, flush them */
+        /** drawing the menu */
+        {
+            uint16_t current_x;
+            const uint8_t space_pixel_width = 2;
+            if (get_flag(on_menu)) {
+                set_flag(update_display);
+
+
+                static uint8_t pool_delay = 0;
+                if (get_flag(selected) || pool_delay) {
+                    reset_flag(selected);
+                    pool_delay++;
+                    SH1106_drawBitmap(space_pixel_width, 5 + (12 * menu_selection), 5, 8, arrow);
+                    if (pool_delay >= 10) {
+                        pool_delay = 0;
+                        set_flag(selected);
+                    }
+                } else {
+                    SH1106_drawBitmap(0, 5 + (12 * menu_selection), 5, 8, arrow);
+                }
+
+                for (uint8_t current_drawing_row = 0; current_drawing_row < SCREEN_ROWS; current_drawing_row++) {
+                    current_x = 8;
+                    uint8_t current_y = space_pixel_width + 3 + (12 * current_drawing_row);
+
+                    current_x +=
+                            SH1106_printStr(current_x, current_y, menu_str[menu_head + current_drawing_row], fnt5x7) +
+                            space_pixel_width;
+                    current_x +=
+                            SH1106_printChar(current_x, current_y, ':', fnt5x7) + space_pixel_width;
+                    switch (current_drawing_row + menu_head) {
+
+                        case DEC_:
+                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[DEC_] / 60, fnt5x7) + 1;
+                            current_x += SH1106_printChar(current_x, current_y - 2, 'o', fnt5x7) +
+                                         1; //TODO alterar na lib das fontes o °
+                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[DEC_] % 60, fnt5x7);
+                            SH1106_printChar(current_x, current_y, '\'', fnt5x7);
+                            break;
+                        case RA:
+                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[RA] / 60, fnt5x7) + 1;
+                            current_x += SH1106_printChar(current_x, current_y, 'h', fnt5x7) +
+                                         1; //TODO alterar na lib das fontes o °
+                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[RA] % 60, fnt5x7);
+                            SH1106_printChar(current_x, current_y, 'm', fnt5x7);
+                            break;
+                        case hemisphere:
+                            SH1106_printStr(current_x, current_y, menu_op_value[hemisphere] ? "Norte" : "Sul", fnt5x7);
+                            break;
+                        case automatic_mode:
+                            SH1106_printStr(current_x, current_y, menu_op_value[automatic_mode] ? "ON" : "OFF", fnt5x7);
+                            break;
+                        case manual_mode:
+                            SH1106_printStr(current_x, current_y, menu_op_value[manual_mode] ? "ON" : "OFF", fnt5x7);
+                            break;
+                        case brilho_tela:
+                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[brilho_tela], fnt5x7);
+                            SH1106_printChar(current_x, current_y, '%', fnt5x7);
+                            break;
+                        case tempo_tela:
+                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[tempo_tela], fnt5x7);
+                            SH1106_printChar(current_x, current_y, 's', fnt5x7);
+                            break;
+                        case save_configs:
+                            SH1106_printStr(current_x - 8, current_y, "  ", fnt5x7);
+                            break;
+                        default:
+                            SH1106_printInt(current_x + space_pixel_width, current_y,
+                                            menu_op_value[menu_head + current_drawing_row],
+                                            fnt5x7);
+                            break;
+                    }
+                }
+
+            } else { /** drawing the submenu */
+                set_flag(update_display);
+
+                current_x = space_pixel_width;
+
+                current_x += SH1106_printStr(current_x, 2, menu_str[CURRENT_SELECTION], fnt5x7);
+                SH1106_printStr(current_x, 2, ":", fnt5x7);
+
+                current_x = (SCR_W / 2) - 14;
+                switch (CURRENT_SELECTION) {
+
+                    case DEC_:
+                        current_x -= 5;
+                        value_preview = POSITIVE_MODULUS(value_preview, 21600);
+                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview / 60, fnt7x10) + 1;
+                        current_x += SH1106_printChar(current_x, (SCR_H / 2) - 5, 'o', fnt7x10) +
+                                     1; //TODO alterar na lib das fontes o °
+                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview % 60, fnt7x10);
+                        SH1106_printStr(current_x, SCR_H / 2, "'", fnt7x10);
+                        break;
+                    case RA:
+                        current_x -= 5;
+                        value_preview = POSITIVE_MODULUS(value_preview, 1440);
+                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview / 60, fnt7x10) + 1;
+                        current_x += SH1106_printChar(current_x, SCR_H / 2, 'h', fnt7x10) +
+                                     1; //TODO alterar na lib das fontes o °
+                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview % 60, fnt7x10);
+                        SH1106_printStr(current_x, SCR_H / 2, "m", fnt7x10);
+                        break;
+                    case hemisphere:
+                        current_x -= 5;
+                        value_preview = BOOLIFY(value_preview);
+                        SH1106_printStr(current_x, SCR_H / 2, value_preview ? "Norte" : "Sul", fnt7x10);
+                        break;
+                    case automatic_mode:
+                        value_preview = BOOLIFY(value_preview);
+                        SH1106_printStr(current_x, SCR_H / 2, value_preview ? "ON" : "OFF", fnt7x10);
+                        break;
+                    case manual_mode:
+                        value_preview = BOOLIFY(value_preview);
+                        SH1106_printStr(current_x, SCR_H / 2, value_preview ? "ON" : "OFF", fnt7x10);
+                        break;
+                    case brilho_tela:
+                        value_preview = POSITIVE_MODULUS(value_preview, 100);
+                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview, fnt7x10);
+                        SH1106_printChar(current_x, SCR_H / 2, '%', fnt7x10);
+                        break;
+                    case tempo_tela:
+                        value_preview = POSITIVE_MODULUS(value_preview, 255);
+                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview, fnt7x10);
+                        SH1106_printChar(current_x, SCR_H / 2, 's', fnt7x10);
+                        break;
+                    case save_configs:
+                        set_flag(on_menu);
+                        break;
+                    default:
+                        SH1106_printInt(current_x, SCR_H / 2, value_preview, fnt7x10);
+                }
+
+            }
+        }
+
+        /** < checks if changes to the buffer happened, and if so, flush them */
+        if (get_flag(update_display)) {
             reset_flag(update_display);
             SH1106_flush();
         }
@@ -301,19 +473,15 @@ void SystemClock_Config(void) {
 
 /* USER CODE BEGIN 4 */
 uint8_t get_bat_percentage(void) {
-    HAL_ADC_Start(&hadc2);
-
     uint16_t read_voltage = voltage_read(5 * 10); //5v * 10 of reference on board
     uint8_t percent = ((read_voltage >= V_BAT_MIN ? read_voltage : V_BAT_MIN) - V_BAT_MIN) *
                       (100 / (V_BAT_MAX - V_BAT_MIN));    // converting [bat_min, bat_max] to [0, 100]
 
-    HAL_ADC_Stop(&hadc2);
-
     return percent;
 }
 
+void handle_rotary_events(rotary_data_t *rotary_data) {
 
-int8_t handle_rotary_events(void) {
     if (get_flag(rotary_triggered)) { // rotary encoder triggered
         reset_flag(rotary_triggered);
         set_flag(wake);
@@ -325,11 +493,15 @@ int8_t handle_rotary_events(void) {
             if (get_flag(ccw)) { //counter-clockwise rotation
 
                 reset_flag(ccw);
-                return -1;
+                rotary_data->inc = -1;
+                return;
             } else { // clockwise rotation
-                return 1;
+                rotary_data->inc = 1;
+                return;
             }
         }
+        set_flag(update_display);
+
     } else if (get_flag(selected)) { // rotary encoder pressed
         reset_flag(selected);
         set_flag(wake);
@@ -339,39 +511,47 @@ int8_t handle_rotary_events(void) {
             last_move_ticks = TICKS_NOW;
             set_flag(wake);
 
+            rotary_data->was_pressed = true;
+
             if (get_flag(on_menu)) reset_flag(on_menu);
             else set_flag(on_menu);
 
         }
+        set_flag(update_display);
+        return;
     }
-    return 0;
+
+    /** resets all values if nothing happened */
+    rotary_data->inc = 0;
+    rotary_data->was_pressed = false;
 }
 
-void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t *op_value, bool increase) {
+void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t *op_value, int8_t increase) {
 
-
-    if (increase) {
-        if (get_flag(on_menu)) {
-            if (*arrow_row < SCREEN_ROWS) {
-                *arrow_row++;
+    if (increase && (current_menu_top != NULL) && (arrow_row != NULL) && (op_value != NULL)) {
+        if (increase == 1) {
+            if (get_flag(on_menu)) {
+                if (*arrow_row < SCREEN_ROWS
+                                 - 1) {
+                    (*arrow_row)++;
+                } else {
+                    *current_menu_top = SCROLL_DOWN_MENU(*current_menu_top);
+                }
             } else {
-                SCROLL_DOWN_MENU(*current_menu_top);
+                (*op_value) += 5; //forward increase
             }
         } else {
-            *op_value++;
-        }
-    } else {
-        if (get_flag(on_menu)) {
-            if (*arrow_row > 0) {
-                *arrow_row--;
+            if (get_flag(on_menu)) {
+                if (*arrow_row > 0) {
+                    (*arrow_row)--;
+                } else {
+                    *current_menu_top = SCROLL_UP_MENU(*current_menu_top);
+                }
             } else {
-                SCROLL_UP_MENU(*current_menu_top);
+                (*op_value) = (*op_value) > 0 ? ((*op_value) - 1) : (*op_value); //unsigned guarded decrease
             }
-        } else {
-            *op_value--;
         }
     }
-
 }
 
 /* USER CODE END 4 */
@@ -386,13 +566,21 @@ void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     /* USER CODE BEGIN Callback 0 */
-
+    static uint8_t scaler_counter = 0;
     /* USER CODE END Callback 0 */
     if (htim->Instance == TIM1) {
         HAL_IncTick();
     }
     /* USER CODE BEGIN Callback 1 */
-
+    if (htim == &htim2) {
+        scaler_counter++;
+        if (timer_pre_scaler == scaler_counter) {
+            if (RA_STEPPER.on_status && menu_op_value[automatic_mode]) {
+                half_step(&RA_STEPPER);
+            }
+            scaler_counter = 0;
+        }
+    }
     /* USER CODE END Callback 1 */
 }
 
@@ -424,8 +612,8 @@ void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line
-	 number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,
-	 line) */
+     number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,
+     line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

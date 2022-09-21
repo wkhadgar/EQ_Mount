@@ -25,7 +25,7 @@
 #if   defined ( __ICCARM__ )
   #pragma system_include         /* treat file as system include file for MISRA check */
 #elif defined (__clang__)
-#pragma clang system_header   /* treat file as system include file */
+  #pragma clang system_header   /* treat file as system include file */
 #endif
 
 #ifndef __CORE_CM3_H_GENERIC
@@ -1700,7 +1700,7 @@ __STATIC_INLINE void NVIC_DecodePriority(uint32_t Priority, uint32_t PriorityGro
   \param [in]   vector    Address of interrupt handler function
  */
 __STATIC_INLINE void __NVIC_SetVector(IRQn_Type IRQn, uint32_t vector) {
-    uint32_t * vectors = (uint32_t *) SCB->VTOR;
+    uint32_t *vectors = (uint32_t *) SCB->VTOR;
     vectors[(int32_t) IRQn + NVIC_USER_IRQ_OFFSET] = vector;
 }
 
@@ -1714,7 +1714,7 @@ __STATIC_INLINE void __NVIC_SetVector(IRQn_Type IRQn, uint32_t vector) {
   \return                 Address of interrupt handler function
  */
 __STATIC_INLINE uint32_t __NVIC_GetVector(IRQn_Type IRQn) {
-    uint32_t * vectors = (uint32_t *) SCB->VTOR;
+    uint32_t *vectors = (uint32_t *) SCB->VTOR;
     return vectors[(int32_t) IRQn + NVIC_USER_IRQ_OFFSET];
 }
 
@@ -1793,18 +1793,20 @@ __STATIC_INLINE uint32_t SCB_GetFPUType(void) {
            function <b>SysTick_Config</b> is not included. In this case, the file <b><i>device</i>.h</b>
            must contain a vendor-specific implementation of this function.
  */
-__STATIC_INLINE uint32_t SysTick_Config(uint32_t ticks) {
-    if ((ticks - 1UL) > SysTick_LOAD_RELOAD_Msk) {
-        return (1UL);                                                   /* Reload value impossible */
-    }
+__STATIC_INLINE uint32_t SysTick_Config(uint32_t ticks)
+{
+  if ((ticks - 1UL) > SysTick_LOAD_RELOAD_Msk)
+  {
+    return (1UL);                                                   /* Reload value impossible */
+  }
 
-    SysTick->LOAD = (uint32_t) (ticks - 1UL);                         /* set reload register */
-    NVIC_SetPriority(SysTick_IRQn, (1UL << __NVIC_PRIO_BITS) - 1UL); /* set Priority for Systick Interrupt */
-    SysTick->VAL = 0UL;                                             /* Load the SysTick Counter Value */
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |
-                    SysTick_CTRL_TICKINT_Msk |
-                    SysTick_CTRL_ENABLE_Msk;                         /* Enable SysTick IRQ and SysTick Timer */
-    return (0UL);                                                     /* Function successful */
+  SysTick->LOAD  = (uint32_t)(ticks - 1UL);                         /* set reload register */
+  NVIC_SetPriority (SysTick_IRQn, (1UL << __NVIC_PRIO_BITS) - 1UL); /* set Priority for Systick Interrupt */
+  SysTick->VAL   = 0UL;                                             /* Load the SysTick Counter Value */
+  SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |
+                   SysTick_CTRL_TICKINT_Msk   |
+                   SysTick_CTRL_ENABLE_Msk;                         /* Enable SysTick IRQ and SysTick Timer */
+  return (0UL);                                                     /* Function successful */
 }
 
 #endif

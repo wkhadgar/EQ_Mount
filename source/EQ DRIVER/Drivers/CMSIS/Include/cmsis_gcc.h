@@ -1283,7 +1283,7 @@ __STATIC_FORCEINLINE void __STRT(uint32_t value, volatile uint32_t *ptr)
  */
 __STATIC_FORCEINLINE int32_t __SSAT(int32_t val, uint32_t sat) {
     if ((sat >= 1U) && (sat <= 32U)) {
-        const int32_t max = (int32_t) ((1U << (sat - 1U)) - 1U);
+        const int32_t max = (int32_t)((1U << (sat - 1U)) - 1U);
         const int32_t min = -1 - max;
         if (val > max) {
             return max;

@@ -28,27 +28,27 @@ typedef enum {
 	INT_vars_amount,
 } int_var_t;
 
-volatile static bool boolVariables[IRQ_vars_amount] = { 0 };
-volatile static int intVariables[INT_vars_amount] = { 0 };
+volatile static bool boolVariables[IRQ_vars_amount] = {0};
+volatile static int intVariables[INT_vars_amount] = {0};
 
 /**
  * @brief: gets the boolean value of a flag.
- * @param bool_var: enum declared value of the flag.
- * @return True if bool_var is True, False otherwise.
+ * @param flag_var: enum declared value of the flag.
+ * @return True if flag_var is True, False otherwise.
  */
-bool get_flag(bool_var_t bool_var);
+bool get_flag(bool_var_t flag_var);
 
 /**
  * @brief: sets a given boolean to True.
- * @param bool_var: enum declared value of the flag.
+ * @param flag_var: enum declared value of the flag.
  */
-void set_flag(bool_var_t bool_var);
+void set_flag(bool_var_t flag_var);
 
 /**
  * @brief: sets a given boolean to False.
- * @param bool_var: enum declared value of the flag.
+ * @param flag_var: enum declared value of the flag.
  */
-void reset_flag(bool_var_t bool_var);
+void reset_flag(bool_var_t flag_var);
 
 /**
  * @brief: increment a int enum declared var and returns its new value.

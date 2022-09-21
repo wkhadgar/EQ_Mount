@@ -25,7 +25,7 @@
 #if   defined ( __ICCARM__ )
   #pragma system_include         /* treat file as system include file for MISRA check */
 #elif defined (__clang__)
-#pragma clang system_header   /* treat file as system include file */
+  #pragma clang system_header   /* treat file as system include file */
 #endif
 
 #ifndef __CORE_SC000_H_GENERIC

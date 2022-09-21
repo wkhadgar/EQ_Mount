@@ -35,6 +35,8 @@ extern "C" {
 extern TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN Private defines */
+#define EARTH_ROTATION_PULSE_PERIOD_US 281250
+#define MAX_SPEED_PULSE_PERIOD_US 3750
 
 /* USER CODE END Private defines */
 

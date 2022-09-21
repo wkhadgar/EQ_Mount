@@ -8,7 +8,7 @@
             <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider"
                                 ref="shared-provider"/>
             <provider class="com.st.stm32cube.ide.mcu.toolchain.armnone.setup.CrossBuiltinSpecsDetector" console="false"
-                      env-hash="1116878737224290261"
+                      env-hash="-166446808956898597"
                       id="com.st.stm32cube.ide.mcu.toolchain.armnone.setup.CrossBuiltinSpecsDetector"
                       keep-relative-paths="false" name="MCU ARM GCC Built-in Compiler Settings"
                       parameter="${COMMAND} ${FLAGS} -E -P -v -dD &quot;${INPUTS}&quot;" prefer-non-shared="true">
@@ -24,9 +24,8 @@
                                 ref="shared-provider"/>
             <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider"
                                 ref="shared-provider"/>
-            <provider copy-of="extension" id="org.eclipse.cdt.managedbuilder.core.GCCBuildCommandParser"/>
             <provider class="com.st.stm32cube.ide.mcu.toolchain.armnone.setup.CrossBuiltinSpecsDetector" console="false"
-                      env-hash="1116878737224290261"
+                      env-hash="-166446808956898597"
                       id="com.st.stm32cube.ide.mcu.toolchain.armnone.setup.CrossBuiltinSpecsDetector"
                       keep-relative-paths="false" name="MCU ARM GCC Built-in Compiler Settings"
                       parameter="${COMMAND} ${FLAGS} -E -P -v -dD &quot;${INPUTS}&quot;" prefer-non-shared="true">

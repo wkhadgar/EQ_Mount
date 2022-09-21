@@ -271,7 +271,7 @@ void SH1106_scrollHSetup(uint8_t dir, uint8_t start, uint8_t end,
 //   end - end page address [0..7], must be great or equal to start value
 //   interval - time interval between scroll steps (one of SH1106_scroll_IFXXX values)
 //   voffs - vertical scrolling offset, this value specifies how many lines will
-//           be scrolled vertically per one scroll step [1..63]
+//           be scrolled vertically per one scroll half_step [1..63]
 void SH1106_scrollDSetup(uint8_t dir, uint8_t start, uint8_t end,
                          uint8_t interval, uint8_t voffs) {
     SH1106_cmd((dir == SH1106_scroll_RIGHT) ?
