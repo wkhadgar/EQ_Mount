@@ -11,6 +11,7 @@ include_directories("source/EQ DRIVER/Drivers/CMSIS/Device/ST/STM32F1xx")
 include_directories("source/EQ DRIVER/Drivers/CMSIS/Device/ST/STM32F1xx/Include")
 include_directories("source/EQ DRIVER/Drivers/CMSIS/Include")
 include_directories("source/EQ DRIVER/Drivers/Display/Inc")
+include_directories("source/EQ DRIVER/Drivers/Steppers/Inc")
 include_directories("source/EQ DRIVER/Drivers/STM32F1xx_HAL_Driver/Inc")
 include_directories("source/EQ DRIVER/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy")
 include_directories("source/EQ DRIVER/Core/Inc")
@@ -26,6 +27,7 @@ include_directories("source/EQ DRIVER/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy")
 
 add_executable(EQmount_custom_controller
         "source/EQ DRIVER/Core/Inc/adc.h"
+        "source/EQ DRIVER/Core/Inc/astro_conv.h"
         "source/EQ DRIVER/Core/Inc/bkp_regs.h"
         "source/EQ DRIVER/Core/Inc/gpio.h"
         "source/EQ DRIVER/Core/Inc/i2c.h"
@@ -35,6 +37,7 @@ add_executable(EQmount_custom_controller
         "source/EQ DRIVER/Core/Inc/tim.h"
         "source/EQ DRIVER/Core/Inc/variables.h"
         "source/EQ DRIVER/Core/Src/adc.c"
+        "source/EQ DRIVER/Core/Src/astro_conv.c"
         "source/EQ DRIVER/Core/Src/bkp_regs.c"
         "source/EQ DRIVER/Core/Src/gpio.c"
         "source/EQ DRIVER/Core/Src/i2c.c"
@@ -128,7 +131,7 @@ add_executable(EQmount_custom_controller
         "source/EQ DRIVER/Core/Inc/gpio.h"
         "source/EQ DRIVER/Core/Inc/i2c.h"
         "source/EQ DRIVER/Core/Inc/main.h"
-        "source/EQ DRIVER/Core/Inc/steppers.h"
+        "source/EQ DRIVER/Drivers/Steppers/Inc/steppers.h"
         "source/EQ DRIVER/Core/Inc/stm32f1xx_hal_conf.h"
         "source/EQ DRIVER/Core/Inc/stm32f1xx_it.h"
         "source/EQ DRIVER/Core/Inc/tim.h"
@@ -138,7 +141,7 @@ add_executable(EQmount_custom_controller
         "source/EQ DRIVER/Core/Src/gpio.c"
         "source/EQ DRIVER/Core/Src/i2c.c"
         "source/EQ DRIVER/Core/Src/main.c"
-        "source/EQ DRIVER/Core/Src/steppers.c"
+        "source/EQ DRIVER/Drivers/Steppers/Src/steppers.c"
         "source/EQ DRIVER/Core/Src/stm32f1xx_hal_msp.c"
         "source/EQ DRIVER/Core/Src/stm32f1xx_hal_timebase_tim.c"
         "source/EQ DRIVER/Core/Src/stm32f1xx_it.c"

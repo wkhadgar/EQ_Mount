@@ -7,6 +7,9 @@
 
 #include "main.h"
 
+#define MICRO_STEPPING 16
+#define STEPPER_MAX_STEPS (200 * MICRO_STEPPING)
+
 typedef enum motor_axis {
     Right_Ascension,
     Declination,
@@ -21,7 +24,8 @@ typedef enum dir_t {
 typedef struct stepper_motor {
     motor_axis_t axis;
     uint16_t position; /** < in relation to the full 200 * MICRO_STEPPING steps */
-    uint32_t auto_step_period; /** < in us ; 0 if invalid */
+    uint16_t target_position;
+    uint32_t auto_step_prescaler; /** < in us ; 0 if invalid */
 
     direction_t direction; /** < whether rotation happens clockwise or not */
     bool on_status; /** < is the motor being driven right now? */

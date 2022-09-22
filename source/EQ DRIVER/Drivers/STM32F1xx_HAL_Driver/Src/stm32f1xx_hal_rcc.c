@@ -242,7 +242,7 @@ HAL_StatusTypeDef HAL_RCC_DeInit(void) {
     /* Get Start Tick */
     tickstart = HAL_GetTick();
 
-    /* Second half_step is to clear PLLON bit */
+    /* Second step is to clear PLLON bit */
     CLEAR_BIT(RCC->CR, RCC_CR_PLLON);
 
     /* Wait till PLL is disabled */

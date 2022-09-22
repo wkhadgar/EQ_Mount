@@ -52,63 +52,51 @@ void MX_GPIO_Init(void) {
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOA, LASER_ON_Pin | M1_DIR_Pin | M1_STEP_Pin | M2_DIR_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(VDD_SIGNAL_GPIO_Port, VDD_SIGNAL_Pin, GPIO_PIN_SET);
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(M1_ENABLE_GPIO_Port, M1_ENABLE_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOA, GND_SIGNAL_Pin | M1_ENABLE_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(M2_STEP_GPIO_Port, M2_STEP_Pin, GPIO_PIN_RESET);
-
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(M2_ENABLE_GPIO_Port, M2_ENABLE_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, M1_DIR_Pin | M2_DIR_Pin | M2_ENABLE_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pins : PC13 PC14 PC15 */
     GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PA2 PA8 PA9 PA10
-                             PA11 PA12 PA15 */
-    GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10
-                          | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_15;
+    /*Configure GPIO pins : PA2 PA3 PA8 PA9
+                             PA10 PA11 PA12 PA15 */
+    GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_8 | GPIO_PIN_9
+                          | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_15;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PAPin PAPin PAPin PAPin */
-    GPIO_InitStruct.Pin = LASER_ON_Pin | M1_ENABLE_Pin | M1_DIR_Pin | M2_DIR_Pin;
+    /*Configure GPIO pins : PAPin PAPin */
+    GPIO_InitStruct.Pin = VDD_SIGNAL_Pin | M1_ENABLE_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /*Configure GPIO pin : PtPin */
-    GPIO_InitStruct.Pin = M1_STEP_Pin;
+    GPIO_InitStruct.Pin = GND_SIGNAL_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(M1_STEP_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GND_SIGNAL_GPIO_Port, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : PtPin */
-    GPIO_InitStruct.Pin = M2_STEP_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(M2_STEP_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : PtPin */
-    GPIO_InitStruct.Pin = M2_ENABLE_Pin;
+    /*Configure GPIO pins : PBPin PBPin PBPin */
+    GPIO_InitStruct.Pin = M1_DIR_Pin | M2_DIR_Pin | M2_ENABLE_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(M2_ENABLE_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PB2 PB10 PB11 PB15
-                             PB3 PB4 PB5 PB8
-                             PB9 */
-    GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_15
-                          | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_8
-                          | GPIO_PIN_9;
+    /*Configure GPIO pins : PB11 PB15 PB3 PB4
+                             PB5 PB8 PB9 */
+    GPIO_InitStruct.Pin = GPIO_PIN_11 | GPIO_PIN_15 | GPIO_PIN_3 | GPIO_PIN_4
+                          | GPIO_PIN_5 | GPIO_PIN_8 | GPIO_PIN_9;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 

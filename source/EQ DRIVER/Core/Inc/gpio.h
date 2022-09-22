@@ -43,13 +43,15 @@ void MX_GPIO_Init(void);
 
 typedef enum {
     AN_V_BAT = 0,
-    OUT_LASER,
-    OUT_RA_DIR,
+    OUT_FINE_ADJUST,
+    OUT_VDD_SIG,
+    OUT_GND_SIG,
     OUT_RA_STEP,
     OUT_RA_EN,
+    OUT_RA_DIR,
     OUT_DEC_DIR,
-    OUT_DEC_STEP,
     OUT_DEC_EN,
+    OUT_DEC_STEP,
     IN_SELECT,
     IN_ROTARY_CLKW,
     IN_ROTARY_TRIG,

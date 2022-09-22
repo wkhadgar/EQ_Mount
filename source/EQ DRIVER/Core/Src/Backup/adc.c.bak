@@ -186,6 +186,21 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef *adcHandle) {
 
 /* USER CODE BEGIN 1 */
 
+uint32_t adc_mean_sampled_read(struct __ADC_HandleTypeDef *hadc, uint16_t mapping) {
+    uint32_t v = 0;
+    HAL_ADC_Start(hadc);
+    HAL_ADC_PollForConversion(hadc, 100);
+    for (uint8_t samples = 0; samples < 64; samples++) {
+        v += HAL_ADC_GetValue(hadc);
+    }
+    HAL_ADC_Stop(hadc);
+
+    v >>= 6; // v / 64
+    v = (v * mapping) / 4025; //correlates analog read to max mapping value
+
+    return v
+}
+
 /**
  * @brief Reads the analog input on battery vcc and returns the voltage based on the given high voltage ref x 10
  *
@@ -193,32 +208,14 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef *adcHandle) {
  * @retval Converted adc reading into the voltage reference frame, only scaled by 10 times.
  */
 uint16_t voltage_read(uint16_t VREFH_x10) {
-    uint32_t v = 0;
+    uint16_t v = adc_mean_sampled_read(&hadc2, VREFH_x10);
 
-    HAL_ADC_Start(&hadc2);
-    HAL_ADC_PollForConversion(&hadc2, 100);
-    for (uint8_t samples = 0; samples < 64; samples++) {
-        v += HAL_ADC_GetValue(&hadc2);
-    }
-    HAL_ADC_Stop(&hadc2);
-
-    v >>= 6; // v / 64
-    v = (v * VREFH_x10) / 4025; //correlates analog read to voltage value
     return v;
 }
 
-int8_t fine_adjusts_reading() {
-    uint32_t v = 0;
+int8_t fine_adjusts_prescaler_value() {
+    int8_t adjust = adc_mean_sampled_read(&hadc1, 10) - 5; //correlates analog read to new scale (-5 to +5)
 
-    HAL_ADC_Start(&hadc1);
-    HAL_ADC_PollForConversion(&hadc1, 100);
-    for (uint8_t samples = 0; samples < 64; samples++) {
-        v += HAL_ADC_GetValue(&hadc1);
-    }
-    HAL_ADC_Stop(&hadc1);
-
-    v >>= 6; // v / 64
-    v = ((v * 200) / 4025) - 100; //correlates analog read to new scale (-100 to +100)
-    return (int8_t) v;
+    return adjust;
 }
 /* USER CODE END 1 */

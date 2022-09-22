@@ -30,7 +30,7 @@
 #include "sh1106.h"
 #include "variables.h"
 #include "bkp_regs.h"
-#include "steppers.h"
+#include "../../Drivers/Steppers/Inc/steppers.h"
 
 /* USER CODE END Includes */
 
@@ -50,6 +50,8 @@ typedef struct rotary_data {
 #define V_BAT_MIN 32 /** < 3.2v * 10 */
 #define V_BAT_MAX 42 /** < 4.2v * 10 */
 #define SCREEN_ROWS 5
+#define CHECK_BATTERY_STATUS 0 /** change to 0 if driver is connected without a battery */
+#define ENABLE_FAKE_LOAD 0 /** change to 0 if the loading screen must not be shown */
 
 /* USER CODE END PD */
 
@@ -92,18 +94,27 @@ uint16_t menu_op_value[MENU_SIZE] = {0};
 
 
 uint32_t last_move_ticks = 0; // to track time passed in ms with HAL_GetTick()
-uint32_t ra_last_tick, bat_ticks_update = 0;
+
+#if CHECK_BATTERY_STATUS
+uint32_t bat_ticks_update = 0;
+#endif /** CHECK_BATTERY_STATUS */
 
 
 uint8_t menu_head = 0;
 uint8_t menu_selection = 0;
-uint8_t battery_charge;
 uint8_t frame = 0;
+
+#if CHECK_BATTERY_STATUS
+uint8_t battery_charge;
+#endif /** CHECK_BATTERY_STATUS */
 
 int16_t signed_value_preview = 0;
 uint16_t value_preview = 0;
 uint16_t lock_value = 0;
+
+uint8_t timer_pre_scaler = 1;
 /* USER CODE END PV */
+
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -121,16 +132,16 @@ uint8_t get_bat_percentage(void);
 /**
  * @brief Deals with the rotary encoder changes
  *
- * @retval -1 if the rotary was moved counter-clockwise, 1 if clockwise, 0 if no change happened.
+ * @param rotary_data [in] Ponteiro da struct com as informações dos eventos do rotary encoder
  */
 void handle_rotary_events(rotary_data_t *rotary_data);
 
 /**
  * @brief Manage the changes in the menu, updating position variables and value previews.
  *
- * @param value [out] Value to be updated when not in menu
  * @param current_menu_top [out] Value to be updated of the menu head
  * @param arrow_row  [out] Value of the selection arrow on menu screen
+ * @param op_value [out] Value to be updated when not in menu
  * @param increase boolean telling whether to increase or decrease the current screen parameters
  */
 void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t *op_value, int8_t increase);
@@ -189,7 +200,11 @@ int main(void) {
     SH1106_cleanInit();
 
     /** data recover */
+
+#if CHECK_BATTERY_STATUS
     battery_charge = get_bat_percentage();
+#endif /** CHECK_BATTERY_STATUS */
+
     menu_op_value[brilho_tela] = BKP_read(0);
     menu_op_value[hemisphere] = BKP_read(1);
     menu_op_value[tempo_tela] = BKP_read(2);
@@ -200,6 +215,7 @@ int main(void) {
     SH1106_clear();
     HAL_Delay(2500);
 
+#if ENABLE_FAKE_LOAD
     /** transition to menu fake load */
     SH1106_printStr(16, 15, "Carregando Menu", fnt5x7);
     for (uint8_t s = 0; s <= 100; s += 2) {
@@ -207,15 +223,20 @@ int main(void) {
         SH1106_flush();
         HAL_Delay(1);
     }
+#endif /** ENABLE_FAKE_LOAD */
+
     SH1106_clear();
     set_flag(on_menu);
 
     last_move_ticks = TICKS_NOW; /** < start time reference */
-    ra_last_tick = last_move_ticks; /** < RA tracking time reference */
-    bat_ticks_update = last_move_ticks; /** < time tracking to help make periodic battery checks */
 
-    HAL_TIM_Base_Start_IT(&htim2);
+#if CHECK_BATTERY_STATUS
+    bat_ticks_update = last_move_ticks; /** < time tracking to help make periodic battery checks */
+#endif /** CHECK_BATTERY_STATUS */
+
     stepper_init(&RA_STEPPER);
+    stepper_init(&DEC_STEPPER);
+    HAL_TIM_Base_Start_IT(&htim2);
     /* USER CODE END 2 */
 
     /* Infinite loop */
@@ -236,6 +257,7 @@ int main(void) {
             }
         }
 
+#if CHECK_BATTERY_STATUS
         /** battery info */
         {
             if (TICKS_NOW - bat_ticks_update > 10000) {
@@ -246,6 +268,7 @@ int main(void) {
             SH1106_drawRoundRectFill(battery_charge, 105, 2, 20, 5);
             if (get_flag(low_battery)) SH1106_drawBitmap(96, 1, 5, 8, alert);
         }
+#endif /** CHECK_BATTERY_STATUS */
 
         /** updates on menu related values*/
         {
@@ -253,18 +276,32 @@ int main(void) {
             handle_rotary_events(&rotary_events);
 
             if (rotary_events.was_pressed) {
-                if ((lock_value != value_preview) && get_flag(on_menu)) {
-                    menu_op_value[CURRENT_SELECTION] = value_preview;
+                if ((lock_value != value_preview) && get_flag(on_menu)) { //if value changed
+                    menu_op_value[CURRENT_SELECTION] = value_preview; //saves value to menu
                     lock_value = value_preview;
+
+                    switch (CURRENT_SELECTION) { /** the given value was updated, then: ... */
+                        case DEC_:
+                            DEC_STEPPER.target_position = ((menu_op_value[DEC_] / 60) %
+                                                           STEPPER_MAX_STEPS); //TODO calcular a proporção correta
+                            break;
+                        case hemisphere:
+                            if (menu_op_value[hemisphere]) {
+                                stepper_set_direction(&RA_STEPPER, clockwise);
+                            } else {
+                                stepper_set_direction(&RA_STEPPER, counter_clockwise);
+                            }
+                            break;
+                    }
+
                 } else if (!get_flag(on_menu)) {
-                    value_preview = menu_op_value[CURRENT_SELECTION];
+                    value_preview = menu_op_value[CURRENT_SELECTION]; //gets value from menu
                 }
 
             } else if (rotary_events.inc) {
                 handle_menu_changes(&menu_head, &menu_selection, &value_preview, rotary_events.inc);
             }
 
-            signed_value_preview = (int16_t) (value_preview - 32765);
         }
 
         /** drawing the menu */
@@ -549,7 +586,6 @@ void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     /* USER CODE BEGIN Callback 0 */
-    static uint8_t pre_scaler = 1;
     static uint8_t scaler_counter = 0;
     /* USER CODE END Callback 0 */
     if (htim->Instance == TIM1) {
@@ -558,8 +594,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     /* USER CODE BEGIN Callback 1 */
     if (htim == &htim2) {
         scaler_counter++;
-        if (pre_scaler == scaler_counter) {
-            half_step(&RA_STEPPER);
+        if (timer_pre_scaler == scaler_counter) {
+            if (RA_STEPPER.on_status && menu_op_value[automatic_mode]) {
+                half_step(&RA_STEPPER);
+            }
             scaler_counter = 0;
         }
     }

@@ -2,7 +2,7 @@
  * @brief stepper motors control module
  */
 
-#include "steppers.h"
+#include "../../../Drivers/Steppers/Inc/steppers.h"
 
 #define RA_REVOLUTION_TIME_SECS 900
 #define MICRO_STEPPING 16

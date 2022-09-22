@@ -2,11 +2,12 @@
  * @brief stepper motors control module
  */
 
-#include "steppers.h"
+#include "../Inc/steppers.h"
 
-#define RA_REVOLUTION_TIME_SECS 900
-#define MICRO_STEPPING 16
-#define STEPPER_MAX_STEPS (200 * MICRO_STEPPING)
+#define WORM_GEAR_ROTATION_PERIOD_uS 900000000
+#define STEPPER_ROTATION_PULSE_PERIOD_uS ((WORM_GEAR_ROTATION_PERIOD_uS) / STEPPER_MAX_STEPS)
+#define MAX_SPEED_PULSE_PERIOD_uS 1875
+
 
 void stepper_disable(stepper_t *s) {
     s->on_status = 0;
@@ -28,7 +29,8 @@ void stepper_init(stepper_t *s) {
     s->direction = 0;
     stepper_enable(s);
 
-    s->auto_step_period = (s->axis == Right_Ascension) ? (1000000 * RA_REVOLUTION_TIME_SECS / STEPPER_MAX_STEPS) : 0;
+    s->auto_step_prescaler = (s->axis == Right_Ascension) ? (
+            (STEPPER_ROTATION_PULSE_PERIOD_uS / MAX_SPEED_PULSE_PERIOD_uS) / 2) : 2;
     s->is_configured = true;
 }
 

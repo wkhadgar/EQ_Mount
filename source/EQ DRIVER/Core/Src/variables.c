@@ -11,7 +11,3 @@ void reset_flag(bool_var_t flag_var) {
 bool get_flag(bool_var_t flag_var) {
     return boolVariables[flag_var];
 }
-
-int incremented_var(int_var_t int_var, int8_t increment) {
-    return (intVariables[int_var] += increment);
-}
