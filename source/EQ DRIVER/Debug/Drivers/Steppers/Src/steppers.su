@@ -1,0 +1,6 @@
+../Drivers/Steppers/Src/steppers.c:12:6:stepper_disable	16	static
+../Drivers/Steppers/Src/steppers.c:17:6:stepper_enable	16	static
+../Drivers/Steppers/Src/steppers.c:23:6:stepper_init	16	static
+../Drivers/Steppers/Src/steppers.c:39:10:half_step	24	static
+../Drivers/Steppers/Src/steppers.c:60:6:stepper_reverse_direction	16	static
+../Drivers/Steppers/Src/steppers.c:65:6:stepper_set_direction	16	static
