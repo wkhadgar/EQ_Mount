@@ -1,6 +1,0 @@
-../Core/Src/steppers.c:11:6:stepper_disable	16	static
-../Core/Src/steppers.c:16:6:stepper_enable	16	static
-../Core/Src/steppers.c:22:6:stepper_init	16	static
-../Core/Src/steppers.c:35:10:half_step	24	static
-../Core/Src/steppers.c:56:6:stepper_reverse_direction	16	static
-../Core/Src/steppers.c:61:6:stepper_set_direction	16	static

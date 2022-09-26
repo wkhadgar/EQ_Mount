@@ -33,6 +33,8 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -74,9 +76,9 @@ void Error_Handler(void);
 #define M1_DIR_GPIO_Port GPIOB
 #define M2_DIR_Pin GPIO_PIN_1
 #define M2_DIR_GPIO_Port GPIOB
-#define M2_ENABLE_Pin GPIO_PIN_2
+#define M2_ENABLE_Pin GPIO_PIN_10
 #define M2_ENABLE_GPIO_Port GPIOB
-#define M2_STEP_Pin GPIO_PIN_10
+#define M2_STEP_Pin GPIO_PIN_11
 #define M2_STEP_GPIO_Port GPIOB
 #define SELECT_Pin GPIO_PIN_12
 #define SELECT_GPIO_Port GPIOB
@@ -86,6 +88,10 @@ void Error_Handler(void);
 #define ROTARY_TRIG_Pin GPIO_PIN_14
 #define ROTARY_TRIG_GPIO_Port GPIOB
 #define ROTARY_TRIG_EXTI_IRQn EXTI15_10_IRQn
+#define GPS_TX_Pin GPIO_PIN_9
+#define GPS_TX_GPIO_Port GPIOA
+#define GPS_RX_Pin GPIO_PIN_10
+#define GPS_RX_GPIO_Port GPIOA
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14

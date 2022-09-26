@@ -86,7 +86,7 @@ static stepper_t DEC_STEPPER = {
 void stepper_init(stepper_t *s);
 
 /**
- * @brief Do a single motor half_step
+ * @brief Do a single motor half_step if pin is set as GPIO and not as PWM
  *
  * @param s [out] Given stepper motor
  * @return uint8_t Final position of the motor, in relation to the configured referencial.

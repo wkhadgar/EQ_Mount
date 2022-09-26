@@ -1,8 +1,9 @@
-../Core/Src/main.c:146:6:HAL_GPIO_EXTI_Callback	16	static
-../Core/Src/main.c:163:5:main	32	static
-../Core/Src/main.c:436:6:SystemClock_Config	88	static
-../Core/Src/main.c:475:9:get_bat_percentage	16	static
-../Core/Src/main.c:483:6:handle_rotary_events	16	static
-../Core/Src/main.c:529:6:handle_menu_changes	24	static
-../Core/Src/main.c:567:6:HAL_TIM_PeriodElapsedCallback	16	static
-../Core/Src/main.c:591:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:155:6:HAL_GPIO_EXTI_Callback	16	static
+../Core/Src/main.c:166:6:HAL_UART_RxCpltCallback	16	static
+../Core/Src/main.c:177:5:main	24	static
+../Core/Src/main.c:469:6:SystemClock_Config	88	static
+../Core/Src/main.c:512:9:get_bat_percentage	16	static
+../Core/Src/main.c:520:6:handle_rotary_events	16	static
+../Core/Src/main.c:566:6:handle_menu_changes	24	static
+../Core/Src/main.c:604:6:HAL_TIM_PeriodElapsedCallback	16	static
+../Core/Src/main.c:631:6:Error_Handler	4	static,ignoring_inline_asm

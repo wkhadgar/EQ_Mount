@@ -17,11 +17,12 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <PA6H.h>
 #include "main.h"
 #include "adc.h"
 #include "i2c.h"
-#include "rtc.h"
 #include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -162,6 +163,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     }
 }
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    if (huart == &huart1) GNSS_UART_CallBack();
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -195,11 +200,15 @@ int main(void) {
     MX_ADC2_Init();
     MX_TIM2_Init();
     MX_ADC1_Init();
-    MX_RTC_Init();
     MX_TIM3_Init();
+    MX_USART1_UART_Init();
     /* USER CODE BEGIN 2 */
 
+    digitalWrite(OUT_GND_SIG, 0); /** emulated gnd */
+    digitalWrite(OUT_VDD_SIG, 1); /** reference voltage */
+
     SH1106_cleanInit();
+    GNSS_init();
 
     /** data recover */
 
@@ -486,8 +495,7 @@ void SystemClock_Config(void) {
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
         Error_Handler();
     }
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC | RCC_PERIPHCLK_ADC;
-    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_HSE_DIV128;
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
     PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
         Error_Handler();
@@ -595,15 +603,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         HAL_IncTick();
     }
     /* USER CODE BEGIN Callback 1 */
+#ifdef STEP_PIN_AS_GPIO
     if (htim == &htim2) {
         scaler_counter++;
         if (timer_pre_scaler == scaler_counter) {
-            if (RA_STEPPER.on_status && menu_op_value[automatic_mode]) {
+            if (RA_STEPPER.on_status && menu_op_value[manual_mode]) {
                 half_step(&RA_STEPPER);
             }
             scaler_counter = 0;
         }
     }
+#endif /** STEP_PIN_AS_GPIO */
     /* USER CODE END Callback 1 */
 }
 

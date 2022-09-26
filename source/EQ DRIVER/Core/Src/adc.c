@@ -198,7 +198,7 @@ uint32_t adc_mean_sampled_read(struct __ADC_HandleTypeDef *hadc, uint16_t mappin
     v >>= 6; // v / 64
     v = (v * mapping) / 4025; //correlates analog read to max mapping value
 
-    return v
+    return v;
 }
 
 /**

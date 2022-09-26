@@ -1,4 +1,0 @@
-../Core/Src/variables.c:3:6:set_flag	16	static
-../Core/Src/variables.c:7:6:reset_flag	16	static
-../Core/Src/variables.c:11:6:get_flag	16	static
-../Core/Src/variables.c:15:5:incremented_var	16	static

@@ -22,6 +22,7 @@ include_directories("source/EQ DRIVER/Drivers/CMSIS/Device/ST/STM32F1xx")
 include_directories("source/EQ DRIVER/Drivers/CMSIS/Device/ST/STM32F1xx/Include")
 include_directories("source/EQ DRIVER/Drivers/CMSIS/Include")
 include_directories("source/EQ DRIVER/Drivers/Display/Inc")
+include_directories("source/EQ DRIVER/Drivers/GNSS/Inc")
 include_directories("source/EQ DRIVER/Drivers/STM32F1xx_HAL_Driver/Inc")
 include_directories("source/EQ DRIVER/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy")
 
@@ -36,6 +37,7 @@ add_executable(EQmount_custom_controller
         "source/EQ DRIVER/Core/Inc/stm32f1xx_it.h"
         "source/EQ DRIVER/Core/Inc/tim.h"
         "source/EQ DRIVER/Core/Inc/variables.h"
+        "source/EQ DRIVER/Core/Inc/usart.h"
         "source/EQ DRIVER/Core/Src/adc.c"
         "source/EQ DRIVER/Core/Src/astro_conv.c"
         "source/EQ DRIVER/Core/Src/bkp_regs.c"
@@ -50,6 +52,7 @@ add_executable(EQmount_custom_controller
         "source/EQ DRIVER/Core/Src/system_stm32f1xx.c"
         "source/EQ DRIVER/Core/Src/tim.c"
         "source/EQ DRIVER/Core/Src/variables.c"
+        "source/EQ DRIVER/Core/Src/usart.c"
         "source/EQ DRIVER/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h"
         "source/EQ DRIVER/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
         "source/EQ DRIVER/Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h"
@@ -79,6 +82,8 @@ add_executable(EQmount_custom_controller
         "source/EQ DRIVER/Drivers/Display/Inc/horse_running.h"
         "source/EQ DRIVER/Drivers/Display/Inc/sh1106.h"
         "source/EQ DRIVER/Drivers/Display/Src/sh1106.c"
+        "source/EQ DRIVER/Drivers/GNSS/Inc/PA6H.h"
+        "source/EQ DRIVER/Drivers/GNSS/Src/PA6H.c"
         "source/EQ DRIVER/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h"
         "source/EQ DRIVER/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h"
         "source/EQ DRIVER/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc.h"

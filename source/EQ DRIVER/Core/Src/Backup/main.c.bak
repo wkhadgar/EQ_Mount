@@ -21,6 +21,7 @@
 #include "adc.h"
 #include "i2c.h"
 #include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -115,7 +116,6 @@ uint16_t lock_value = 0;
 uint8_t timer_pre_scaler = 1;
 /* USER CODE END PV */
 
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
@@ -195,7 +195,12 @@ int main(void) {
     MX_ADC2_Init();
     MX_TIM2_Init();
     MX_ADC1_Init();
+    MX_TIM3_Init();
+    MX_USART1_UART_Init();
     /* USER CODE BEGIN 2 */
+
+    digitalWrite(OUT_GND_SIG, 0); /** emulated gnd */
+    digitalWrite(OUT_VDD_SIG, 1); /** reference voltage */
 
     SH1106_cleanInit();
 
@@ -592,15 +597,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         HAL_IncTick();
     }
     /* USER CODE BEGIN Callback 1 */
+#ifdef STEP_PIN_AS_GPIO
     if (htim == &htim2) {
         scaler_counter++;
         if (timer_pre_scaler == scaler_counter) {
-            if (RA_STEPPER.on_status && menu_op_value[automatic_mode]) {
+            if (RA_STEPPER.on_status && menu_op_value[manual_mode]) {
                 half_step(&RA_STEPPER);
             }
             scaler_counter = 0;
         }
     }
+#endif /** STEP_PIN_AS_GPIO */
     /* USER CODE END Callback 1 */
 }
 

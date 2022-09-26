@@ -65,10 +65,10 @@ void MX_GPIO_Init(void) {
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PA2 PA3 PA8 PA9
-                             PA10 PA11 PA12 PA15 */
-    GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_8 | GPIO_PIN_9
-                          | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_15;
+    /*Configure GPIO pins : PA2 PA3 PA8 PA11
+                             PA12 PA15 */
+    GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_8 | GPIO_PIN_11
+                          | GPIO_PIN_12 | GPIO_PIN_15;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -93,9 +93,9 @@ void MX_GPIO_Init(void) {
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    /*Configure GPIO pins : PB11 PB15 PB3 PB4
+    /*Configure GPIO pins : PB2 PB15 PB3 PB4
                              PB5 PB8 PB9 */
-    GPIO_InitStruct.Pin = GPIO_PIN_11 | GPIO_PIN_15 | GPIO_PIN_3 | GPIO_PIN_4
+    GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_15 | GPIO_PIN_3 | GPIO_PIN_4
                           | GPIO_PIN_5 | GPIO_PIN_8 | GPIO_PIN_9;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -129,16 +129,18 @@ static struct {
 } self = {
         .gpio = {
                 {V_BATTERY_GPIO_Port,   V_BATTERY_Pin},
+                {FINE_ADJUST_GPIO_Port, FINE_ADJUST_Pin},
+                {VDD_SIGNAL_GPIO_Port,  VDD_SIGNAL_Pin},
+                {GND_SIGNAL_GPIO_Port,  GND_SIGNAL_Pin},
                 {M1_DIR_GPIO_Port,      M1_DIR_Pin},
-                {M1_STEP_GPIO_Port,     M1_STEP_Pin},
+                {M1_ENABLE_GPIO_Port,   M1_ENABLE_Pin},
                 {M2_DIR_GPIO_Port,      M2_DIR_Pin},
-                {M2_STEP_GPIO_Port,     M2_STEP_Pin},
+                {M2_ENABLE_GPIO_Port,   M2_ENABLE_Pin},
                 {SELECT_GPIO_Port,      SELECT_Pin},
                 {ROTARY_CLKW_GPIO_Port, ROTARY_CLKW_Pin},
                 {ROTARY_TRIG_GPIO_Port, ROTARY_TRIG_Pin},
                 {SCL_GPIO_Port,         SCL_Pin},
                 {SDA_GPIO_Port,         SDA_Pin},
-                {},
         },
 };
 

@@ -1,5 +1,5 @@
 ../Core/Src/gpio.c:44:6:MX_GPIO_Init	40	static
-../Core/Src/gpio.c:159:6:digitalRead	24	static
-../Core/Src/gpio.c:164:6:digitalWrite	16	static
-../Core/Src/gpio.c:169:6:digitalToggle	16	static
-../Core/Src/gpio.c:174:6:digitalPulse	16	static
+../Core/Src/gpio.c:149:6:digitalRead	24	static
+../Core/Src/gpio.c:154:6:digitalWrite	16	static
+../Core/Src/gpio.c:159:6:digitalToggle	16	static
+../Core/Src/gpio.c:164:6:digitalPulse	16	static
