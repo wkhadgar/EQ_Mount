@@ -17,7 +17,6 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <PA6H.h>
 #include "main.h"
 #include "adc.h"
 #include "i2c.h"
@@ -27,12 +26,15 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 #include "horse_running.h"
 #include "bitmaps.h"
 #include "sh1106.h"
 #include "variables.h"
 #include "bkp_regs.h"
-#include "../../Drivers/Steppers/Inc/steppers.h"
+#include "steppers.h"
+#include "astro_conv.h"
+#include "PA6H.h"
 
 /* USER CODE END Includes */
 
@@ -70,7 +72,48 @@ typedef struct rotary_data {
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-//menu options (limited to given size)
+
+/** Equatorial Mount structure initialization */
+static mount_data_t EQM = {
+        .orientation = {
+                .declination = 0,
+                .right_ascension = 12 * 60,
+        },
+        .axis_stepper = {
+                .DEC = {
+                        .axis = Declination,
+                        .step_pin = {
+                                .GPIO = M2_STEP_GPIO_Port,
+                                .port = M2_STEP_Pin,
+                        },
+                        .dir_pin = {
+                                .GPIO = M2_DIR_GPIO_Port,
+                                .port = M2_DIR_Pin,
+                        },
+                        .enable_pin = {
+                                .GPIO = M2_ENABLE_GPIO_Port,
+                                .port = M2_ENABLE_Pin,
+                        }
+                },
+                .RA = {
+                        .axis = Right_Ascension,
+                        .step_pin = {
+                                .GPIO = M1_STEP_GPIO_Port,
+                                .port = M1_STEP_Pin,
+                        },
+                        .dir_pin = {
+                                .GPIO = M1_DIR_GPIO_Port,
+                                .port = M1_DIR_Pin,
+                        },
+                        .enable_pin = {
+                                .GPIO = M1_ENABLE_GPIO_Port,
+                                .port = M1_ENABLE_Pin,
+                        }
+                }
+        }
+};
+
+/** menu options (limited to given size) */
 enum menu_option {
     DEC_ = 0,
     RA,
@@ -80,7 +123,7 @@ enum menu_option {
     brilho_tela,
     tempo_tela,
     save_configs,
-    MENU_SIZE //must be the last value
+    MENU_SIZE, //must be the last value
 };
 const char *menu_str[] = {
         "DEC",
@@ -90,7 +133,7 @@ const char *menu_str[] = {
         "Modo manual",
         "Contraste",
         "Luz da tela",
-        "Salvar configs"
+        "Salvar configs",
 };
 uint16_t menu_op_value[MENU_SIZE] = {0};
 
@@ -164,7 +207,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    if (huart == &huart1) GNSS_UART_CallBack();
+    if (huart == &huart1) {
+        if (GNSS_UART_CallBack(&EQM.GNSS_data)) {
+            update_LST(&EQM);
+        }
+    }
 }
 
 /* USER CODE END 0 */
@@ -207,6 +254,7 @@ int main(void) {
     digitalWrite(OUT_GND_SIG, 0); /** emulated gnd */
     digitalWrite(OUT_VDD_SIG, 1); /** reference voltage */
 
+    HAL_Delay(500);
     SH1106_cleanInit();
     GNSS_init();
 
@@ -245,8 +293,8 @@ int main(void) {
     bat_ticks_update = last_move_ticks; /** < time tracking to help make periodic battery checks */
 #endif /** CHECK_BATTERY_STATUS */
 
-    stepper_init(&RA_STEPPER);
-    stepper_init(&DEC_STEPPER);
+    stepper_init(&EQM.axis_stepper.DEC);
+    stepper_init(&EQM.axis_stepper.RA);
     HAL_TIM_Base_Start_IT(&htim2);
     /* USER CODE END 2 */
 
@@ -293,14 +341,15 @@ int main(void) {
 
                     switch (CURRENT_SELECTION) { /** the given value was updated, then: ... */
                         case DEC_:
-                            DEC_STEPPER.target_position = ((menu_op_value[DEC_] / 60) %
-                                                           STEPPER_MAX_STEPS); //TODO calcular a proporção correta
+                            EQM.axis_stepper.DEC.target_position = ((menu_op_value[DEC_] / 60) %
+                                                                    STEPPER_MAX_STEPS); //TODO calcular a proporção correta
                             break;
+
                         case hemisphere:
                             if (menu_op_value[hemisphere]) {
-                                stepper_set_direction(&RA_STEPPER, clockwise);
+                                stepper_set_direction(&EQM.axis_stepper.RA, clockwise);
                             } else {
-                                stepper_set_direction(&RA_STEPPER, counter_clockwise);
+                                stepper_set_direction(&EQM.axis_stepper.RA, counter_clockwise);
                             }
                             break;
                     }
@@ -451,6 +500,7 @@ int main(void) {
             }
         }
 
+
         /** < checks if changes to the buffer happened, and if so, flush them */
         if (get_flag(update_display)) {
             reset_flag(update_display);
@@ -597,13 +647,13 @@ void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     /* USER CODE BEGIN Callback 0 */
-    static uint8_t scaler_counter = 0;
     /* USER CODE END Callback 0 */
     if (htim->Instance == TIM1) {
         HAL_IncTick();
     }
     /* USER CODE BEGIN Callback 1 */
 #ifdef STEP_PIN_AS_GPIO
+    static uint8_t scaler_counter = 0;
     if (htim == &htim2) {
         scaler_counter++;
         if (timer_pre_scaler == scaler_counter) {

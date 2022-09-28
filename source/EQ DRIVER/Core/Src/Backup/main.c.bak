@@ -17,6 +17,7 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <PA6H.h>
 #include "main.h"
 #include "adc.h"
 #include "i2c.h"
@@ -162,6 +163,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     }
 }
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    if (huart == &huart1) GNSS_UART_CallBack();
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -203,6 +208,7 @@ int main(void) {
     digitalWrite(OUT_VDD_SIG, 1); /** reference voltage */
 
     SH1106_cleanInit();
+    GNSS_init();
 
     /** data recover */
 

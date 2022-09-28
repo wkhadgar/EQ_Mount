@@ -5,8 +5,8 @@
 #include "PA6H.h"
 
 uint8_t rx_data = 0;
-uint8_t rx_buffer[GNSSBUFFSIZE];
 uint8_t rx_index = 0;
+uint8_t rx_buffer[GNSSBUFFSIZE];
 
 void GNSS_init(void) {
     HAL_UART_Transmit(GNSS_USART, RMC_ONLY_OUTPUT_CMD, sizeof(RMC_ONLY_OUTPUT_CMD), 100);
@@ -47,28 +47,38 @@ bool is_NMEA_str_valid(char *nmea_str) {
             && (nmea_str_checksum[1] == check[1])) ? true : false;
 }
 
-void GNSS_get_data(char *nmea_str) {
-    float trash;
-    char trash_;
+bool GNSS_get_data(GNSS_data_t *GNSS_data, char *nmea_str) {
+
     if (!strncmp(nmea_str, TARGET_NMEA_SENTENCE, 6)) {
-        if (sscanf(nmea_str, "$GPRMC,%f,%c,%f,%c,%f,%c,%f,%f,%d,,,%c", &GNSS_info.nmea_utc, &GNSS_info.valid_data,
-                   &GNSS_info.nmea_latitude,
-                   &GNSS_info.hemisphere, &GNSS_info.nmea_longitude, &GNSS_info.lat_side, &trash, &trash,
-                   &GNSS_info.nmea_date, &trash_) >= 1)
-            return;
+        sscanf(nmea_str, "$GPRMC,%d.%*d,%c", &GNSS_data->nmea_utc, &GNSS_data->valid_data);
+
+        if (GNSS_data->valid_data == 'V') {
+            sscanf(nmea_str, "$GPRMC,%*f,%*c,,,,,%*f,%*f,%d,,,%*c", &GNSS_data->nmea_date);
+        } else if (GNSS_data->valid_data == 'A') {
+            sscanf(nmea_str, "$GPRMC,%*f,%*c,%f,%c,%f,%c,%*f,%*f,%d,,,%*c", &GNSS_data->nmea_latitude,
+                   &GNSS_data->hemisphere, &GNSS_data->nmea_longitude, &GNSS_data->longitude_side,
+                   &GNSS_data->nmea_date);
+        }
+
+        return true;
     }
+
+    return false;
 }
 
-void GNSS_UART_CallBack() {
+bool GNSS_UART_CallBack(GNSS_data_t *GNSS_data) {
+    static bool success = false;
     if (rx_data != '\n' && rx_index < sizeof(rx_buffer)) {
         rx_buffer[rx_index++] = rx_data;
     } else {
         if (is_NMEA_str_valid((char *) rx_buffer)) {
-            GNSS_get_data((char *) rx_buffer);
+            success = GNSS_get_data(GNSS_data, (char *) rx_buffer);
         }
         rx_index = 0;
         memset(rx_buffer, 0, sizeof(rx_buffer));
     }
     HAL_UART_Receive_IT(GNSS_USART, &rx_data, 1);
+
+    return success;
 }
 

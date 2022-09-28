@@ -284,35 +284,20 @@
 #if (USE_HAL_UART_REGISTER_CALLBACKS == 1)
 void UART_InitCallbacksToDefault(UART_HandleTypeDef *huart);
 #endif /* USE_HAL_UART_REGISTER_CALLBACKS */
-
 static void UART_EndTxTransfer(UART_HandleTypeDef *huart);
-
 static void UART_EndRxTransfer(UART_HandleTypeDef *huart);
-
 static void UART_DMATransmitCplt(DMA_HandleTypeDef *hdma);
-
 static void UART_DMAReceiveCplt(DMA_HandleTypeDef *hdma);
-
 static void UART_DMATxHalfCplt(DMA_HandleTypeDef *hdma);
-
 static void UART_DMARxHalfCplt(DMA_HandleTypeDef *hdma);
-
 static void UART_DMAError(DMA_HandleTypeDef *hdma);
-
 static void UART_DMAAbortOnError(DMA_HandleTypeDef *hdma);
-
 static void UART_DMATxAbortCallback(DMA_HandleTypeDef *hdma);
-
 static void UART_DMARxAbortCallback(DMA_HandleTypeDef *hdma);
-
 static void UART_DMATxOnlyAbortCallback(DMA_HandleTypeDef *hdma);
-
 static void UART_DMARxOnlyAbortCallback(DMA_HandleTypeDef *hdma);
-
 static HAL_StatusTypeDef UART_Transmit_IT(UART_HandleTypeDef *huart);
-
 static HAL_StatusTypeDef UART_EndTransmit_IT(UART_HandleTypeDef *huart);
-
 static HAL_StatusTypeDef UART_Receive_IT(UART_HandleTypeDef *huart);
 
 static HAL_StatusTypeDef

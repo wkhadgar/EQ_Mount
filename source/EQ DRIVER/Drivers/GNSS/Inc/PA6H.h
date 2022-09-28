@@ -13,29 +13,47 @@
 #define GNSS_USART             &huart1
 
 #define TARGET_NMEA_SENTENCE "$GPRMC"
-#define RMC_ONLY_OUTPUT_CMD  "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
+#define RMC_ONLY_OUTPUT_CMD  "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n"
 #define MINIMUN_DATE         "010122"
-#define UTC_ZONE_OFFSET       -3
 
 typedef struct GNSS_data {
-    float nmea_utc;
+    uint32_t nmea_utc;
+    uint32_t nmea_date;
     float nmea_latitude;
     float nmea_longitude;
-    int nmea_date;
     char hemisphere;
-    char lat_side;
+    char longitude_side;
     char valid_data;
 
 } GNSS_data_t;
 
-static GNSS_data_t GNSS_info = {0};
-
+/**
+ * @brief Initializes the GNSS module in IT mode.
+ */
 void GNSS_init(void);
 
+/**
+ * @brief Ckecks if given str is a valid NMEA sentence
+ *
+ * @param nmea_str str to be checked
+ * @return bool true if nmea_str is a valid NMEA sentence, false otherwise.
+ */
 bool is_NMEA_str_valid(char *nmea_str);
 
-void GNSS_get_data(char *string);
+/**
+ * @brief Stores the data from the given valid NMEA GPRMC sentence into the proper struct.
+ * @param GNSS_data [out] Reference to the struct for the data to be saved on.
+ * @param string valid NMEA GPRMC sentence.
+ * @return bool true if the data was successfully saved, false otherwise.
+ */
+bool GNSS_get_data(GNSS_data_t *GNSS_data, char *string);
 
-void GNSS_UART_CallBack();
+/**
+ * @brief Callback for the IT on the UART RX pin.
+ *
+ * @param GNSS_data [out] Target struct for the data received to be saved on.
+ * @return bool true if the data was successfully saved, false otherwise.
+ */
+bool GNSS_UART_CallBack(GNSS_data_t *GNSS_data);
 
 #endif //EQMOUNT_CUSTOM_CONTROLLER_PA6H_GNSS_H

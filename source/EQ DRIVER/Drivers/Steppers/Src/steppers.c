@@ -30,7 +30,7 @@ void stepper_init(stepper_t *s) {
         s->direction = 0;
         stepper_enable(s);
 
-        s->auto_step_prescaler = (s->axis == Right_Ascension) ? (
+        s->auto_step_ticks = (s->axis == Right_Ascension) ? (
                 (STEPPER_ROTATION_PULSE_PERIOD_uS / MAX_SPEED_PULSE_PERIOD_uS) / 2) : 2;
         s->is_configured = true;
     }
