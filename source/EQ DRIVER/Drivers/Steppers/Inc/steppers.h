@@ -6,6 +6,7 @@
 #define EQMOUNT_CUSTOM_CONTROLLER_STEPPERS_H
 
 #include "main.h"
+#include "tim.h"
 
 #define MICRO_STEPPING 16
 #define STEPPER_MAX_STEPS (200 * MICRO_STEPPING)
@@ -17,8 +18,8 @@ typedef enum motor_axis {
 } motor_axis_t;
 
 typedef enum dir_t {
-    clockwise,
-    counter_clockwise,
+    counter_clockwise = -1,
+    clockwise = 1,
 } direction_t;
 
 typedef struct stepper_motor {
@@ -31,6 +32,10 @@ typedef struct stepper_motor {
     bool on_status; /** < is the motor being driven right now? */
     bool is_configured;
 
+    const struct timer {
+        TIM_TypeDef* TIMx;
+        TIM_HandleTypeDef* htimx;
+    } timer_config;
     const struct step {
         GPIO_TypeDef *GPIO;
         uint16_t port;
@@ -64,5 +69,7 @@ uint16_t half_step(stepper_t *s);
 void stepper_reverse_direction(stepper_t *s);
 
 void stepper_set_direction(stepper_t *s, direction_t dir);
+
+uint16_t stepper_to_target_smoothen_period(stepper_t* s, uint16_t target_pos);
 
 #endif //EQMOUNT_CUSTOM_CONTROLLER_STEPPERS_H

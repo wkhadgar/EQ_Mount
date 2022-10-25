@@ -34,7 +34,7 @@
 
 /** @addtogroup CORTEX
   * @{
-  */
+  */ 
 /* Exported types ------------------------------------------------------------*/
 /** @defgroup CORTEX_Exported_Types Cortex Exported Types
   * @{
@@ -254,7 +254,7 @@ typedef struct
 /** @addtogroup CORTEX_Exported_Functions
   * @{
   */
-
+  
 /** @addtogroup CORTEX_Exported_Functions_Group1
   * @{
   */
@@ -274,9 +274,7 @@ uint32_t HAL_SYSTICK_Config(uint32_t TicksNumb);
   */
 /* Peripheral Control functions ***********************************************/
 uint32_t HAL_NVIC_GetPriorityGrouping(void);
-
-void HAL_NVIC_GetPriority(IRQn_Type IRQn, uint32_t PriorityGroup, uint32_t *pPreemptPriority, uint32_t *pSubPriority);
-
+void HAL_NVIC_GetPriority(IRQn_Type IRQn, uint32_t PriorityGroup, uint32_t* pPreemptPriority, uint32_t* pSubPriority);
 uint32_t HAL_NVIC_GetPendingIRQ(IRQn_Type IRQn);
 void HAL_NVIC_SetPendingIRQ(IRQn_Type IRQn);
 void HAL_NVIC_ClearPendingIRQ(IRQn_Type IRQn);
@@ -396,12 +394,12 @@ void HAL_MPU_ConfigRegion(MPU_Region_InitTypeDef *MPU_Init);
 
 /**
   * @}
-  */
+  */ 
 
 /**
   * @}
   */
-
+  
 #ifdef __cplusplus
 }
 #endif

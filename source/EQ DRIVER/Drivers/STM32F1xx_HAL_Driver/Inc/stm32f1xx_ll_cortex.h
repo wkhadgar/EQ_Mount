@@ -228,10 +228,9 @@ extern "C" {
   * @rmtoll STK_CTRL     COUNTFLAG     LL_SYSTICK_IsActiveCounterFlag
   * @retval State of bit (1 or 0).
   */
-__STATIC_INLINE uint32_t
-
-LL_SYSTICK_IsActiveCounterFlag(void) {
-    return ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == (SysTick_CTRL_COUNTFLAG_Msk));
+__STATIC_INLINE uint32_t LL_SYSTICK_IsActiveCounterFlag(void)
+{
+  return ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == (SysTick_CTRL_COUNTFLAG_Msk));
 }
 
 /**
@@ -242,12 +241,16 @@ LL_SYSTICK_IsActiveCounterFlag(void) {
   *         @arg @ref LL_SYSTICK_CLKSOURCE_HCLK
   * @retval None
   */
-__STATIC_INLINE void LL_SYSTICK_SetClkSource(uint32_t Source) {
-    if (Source == LL_SYSTICK_CLKSOURCE_HCLK) {
-        SET_BIT(SysTick->CTRL, LL_SYSTICK_CLKSOURCE_HCLK);
-    } else {
-        CLEAR_BIT(SysTick->CTRL, LL_SYSTICK_CLKSOURCE_HCLK);
-    }
+__STATIC_INLINE void LL_SYSTICK_SetClkSource(uint32_t Source)
+{
+  if (Source == LL_SYSTICK_CLKSOURCE_HCLK)
+  {
+    SET_BIT(SysTick->CTRL, LL_SYSTICK_CLKSOURCE_HCLK);
+  }
+  else
+  {
+    CLEAR_BIT(SysTick->CTRL, LL_SYSTICK_CLKSOURCE_HCLK);
+  }
 }
 
 /**
@@ -257,10 +260,9 @@ __STATIC_INLINE void LL_SYSTICK_SetClkSource(uint32_t Source) {
   *         @arg @ref LL_SYSTICK_CLKSOURCE_HCLK_DIV8
   *         @arg @ref LL_SYSTICK_CLKSOURCE_HCLK
   */
-__STATIC_INLINE uint32_t
-
-LL_SYSTICK_GetClkSource(void) {
-    return READ_BIT(SysTick->CTRL, LL_SYSTICK_CLKSOURCE_HCLK);
+__STATIC_INLINE uint32_t LL_SYSTICK_GetClkSource(void)
+{
+  return READ_BIT(SysTick->CTRL, LL_SYSTICK_CLKSOURCE_HCLK);
 }
 
 /**
@@ -268,8 +270,9 @@ LL_SYSTICK_GetClkSource(void) {
   * @rmtoll STK_CTRL     TICKINT       LL_SYSTICK_EnableIT
   * @retval None
   */
-__STATIC_INLINE void LL_SYSTICK_EnableIT(void) {
-    SET_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);
+__STATIC_INLINE void LL_SYSTICK_EnableIT(void)
+{
+  SET_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);
 }
 
 /**
@@ -277,8 +280,9 @@ __STATIC_INLINE void LL_SYSTICK_EnableIT(void) {
   * @rmtoll STK_CTRL     TICKINT       LL_SYSTICK_DisableIT
   * @retval None
   */
-__STATIC_INLINE void LL_SYSTICK_DisableIT(void) {
-    CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);
+__STATIC_INLINE void LL_SYSTICK_DisableIT(void)
+{
+  CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);
 }
 
 /**
@@ -286,10 +290,9 @@ __STATIC_INLINE void LL_SYSTICK_DisableIT(void) {
   * @rmtoll STK_CTRL     TICKINT       LL_SYSTICK_IsEnabledIT
   * @retval State of bit (1 or 0).
   */
-__STATIC_INLINE uint32_t
-
-LL_SYSTICK_IsEnabledIT(void) {
-    return (READ_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk) == (SysTick_CTRL_TICKINT_Msk));
+__STATIC_INLINE uint32_t LL_SYSTICK_IsEnabledIT(void)
+{
+  return (READ_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk) == (SysTick_CTRL_TICKINT_Msk));
 }
 
 /**
@@ -305,9 +308,10 @@ LL_SYSTICK_IsEnabledIT(void) {
   * @rmtoll SCB_SCR      SLEEPDEEP     LL_LPM_EnableSleep
   * @retval None
   */
-__STATIC_INLINE void LL_LPM_EnableSleep(void) {
-    /* Clear SLEEPDEEP bit of Cortex System Control Register */
-    CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
+__STATIC_INLINE void LL_LPM_EnableSleep(void)
+{
+  /* Clear SLEEPDEEP bit of Cortex System Control Register */
+  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
 }
 
 /**
@@ -315,9 +319,10 @@ __STATIC_INLINE void LL_LPM_EnableSleep(void) {
   * @rmtoll SCB_SCR      SLEEPDEEP     LL_LPM_EnableDeepSleep
   * @retval None
   */
-__STATIC_INLINE void LL_LPM_EnableDeepSleep(void) {
-    /* Set SLEEPDEEP bit of Cortex System Control Register */
-    SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
+__STATIC_INLINE void LL_LPM_EnableDeepSleep(void)
+{
+  /* Set SLEEPDEEP bit of Cortex System Control Register */
+  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
 }
 
 /**
@@ -327,9 +332,10 @@ __STATIC_INLINE void LL_LPM_EnableDeepSleep(void) {
   * @rmtoll SCB_SCR      SLEEPONEXIT   LL_LPM_EnableSleepOnExit
   * @retval None
   */
-__STATIC_INLINE void LL_LPM_EnableSleepOnExit(void) {
-    /* Set SLEEPONEXIT bit of Cortex System Control Register */
-    SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
+__STATIC_INLINE void LL_LPM_EnableSleepOnExit(void)
+{
+  /* Set SLEEPONEXIT bit of Cortex System Control Register */
+  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
 }
 
 /**
@@ -337,9 +343,10 @@ __STATIC_INLINE void LL_LPM_EnableSleepOnExit(void) {
   * @rmtoll SCB_SCR      SLEEPONEXIT   LL_LPM_DisableSleepOnExit
   * @retval None
   */
-__STATIC_INLINE void LL_LPM_DisableSleepOnExit(void) {
-    /* Clear SLEEPONEXIT bit of Cortex System Control Register */
-    CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
+__STATIC_INLINE void LL_LPM_DisableSleepOnExit(void)
+{
+  /* Clear SLEEPONEXIT bit of Cortex System Control Register */
+  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPONEXIT_Msk));
 }
 
 /**
@@ -348,9 +355,10 @@ __STATIC_INLINE void LL_LPM_DisableSleepOnExit(void) {
   * @rmtoll SCB_SCR      SEVEONPEND    LL_LPM_EnableEventOnPend
   * @retval None
   */
-__STATIC_INLINE void LL_LPM_EnableEventOnPend(void) {
-    /* Set SEVEONPEND bit of Cortex System Control Register */
-    SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SEVONPEND_Msk));
+__STATIC_INLINE void LL_LPM_EnableEventOnPend(void)
+{
+  /* Set SEVEONPEND bit of Cortex System Control Register */
+  SET_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SEVONPEND_Msk));
 }
 
 /**
@@ -359,9 +367,10 @@ __STATIC_INLINE void LL_LPM_EnableEventOnPend(void) {
   * @rmtoll SCB_SCR      SEVEONPEND    LL_LPM_DisableEventOnPend
   * @retval None
   */
-__STATIC_INLINE void LL_LPM_DisableEventOnPend(void) {
-    /* Clear SEVEONPEND bit of Cortex System Control Register */
-    CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SEVONPEND_Msk));
+__STATIC_INLINE void LL_LPM_DisableEventOnPend(void)
+{
+  /* Clear SEVEONPEND bit of Cortex System Control Register */
+  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SEVONPEND_Msk));
 }
 
 /**
@@ -381,9 +390,10 @@ __STATIC_INLINE void LL_LPM_DisableEventOnPend(void) {
   *         @arg @ref LL_HANDLER_FAULT_MEM
   * @retval None
   */
-__STATIC_INLINE void LL_HANDLER_EnableFault(uint32_t Fault) {
-    /* Enable the system handler fault */
-    SET_BIT(SCB->SHCSR, Fault);
+__STATIC_INLINE void LL_HANDLER_EnableFault(uint32_t Fault)
+{
+  /* Enable the system handler fault */
+  SET_BIT(SCB->SHCSR, Fault);
 }
 
 /**
@@ -395,9 +405,10 @@ __STATIC_INLINE void LL_HANDLER_EnableFault(uint32_t Fault) {
   *         @arg @ref LL_HANDLER_FAULT_MEM
   * @retval None
   */
-__STATIC_INLINE void LL_HANDLER_DisableFault(uint32_t Fault) {
-    /* Disable the system handler fault */
-    CLEAR_BIT(SCB->SHCSR, Fault);
+__STATIC_INLINE void LL_HANDLER_DisableFault(uint32_t Fault)
+{
+  /* Disable the system handler fault */
+  CLEAR_BIT(SCB->SHCSR, Fault);
 }
 
 /**
@@ -413,10 +424,9 @@ __STATIC_INLINE void LL_HANDLER_DisableFault(uint32_t Fault) {
   * @rmtoll SCB_CPUID    IMPLEMENTER   LL_CPUID_GetImplementer
   * @retval Value should be equal to 0x41 for ARM
   */
-__STATIC_INLINE uint32_t
-
-LL_CPUID_GetImplementer(void) {
-    return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_IMPLEMENTER_Msk) >> SCB_CPUID_IMPLEMENTER_Pos);
+__STATIC_INLINE uint32_t LL_CPUID_GetImplementer(void)
+{
+  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_IMPLEMENTER_Msk) >> SCB_CPUID_IMPLEMENTER_Pos);
 }
 
 /**
@@ -424,10 +434,9 @@ LL_CPUID_GetImplementer(void) {
   * @rmtoll SCB_CPUID    VARIANT       LL_CPUID_GetVariant
   * @retval Value between 0 and 255 (0x1: revision 1, 0x2: revision 2)
   */
-__STATIC_INLINE uint32_t
-
-LL_CPUID_GetVariant(void) {
-    return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_VARIANT_Msk) >> SCB_CPUID_VARIANT_Pos);
+__STATIC_INLINE uint32_t LL_CPUID_GetVariant(void)
+{
+  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_VARIANT_Msk) >> SCB_CPUID_VARIANT_Pos);
 }
 
 /**
@@ -435,10 +444,9 @@ LL_CPUID_GetVariant(void) {
   * @rmtoll SCB_CPUID    ARCHITECTURE  LL_CPUID_GetConstant
   * @retval Value should be equal to 0xF for Cortex-M3 devices
   */
-__STATIC_INLINE uint32_t
-
-LL_CPUID_GetConstant(void) {
-    return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_ARCHITECTURE_Msk) >> SCB_CPUID_ARCHITECTURE_Pos);
+__STATIC_INLINE uint32_t LL_CPUID_GetConstant(void)
+{
+  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_ARCHITECTURE_Msk) >> SCB_CPUID_ARCHITECTURE_Pos);
 }
 
 /**
@@ -446,10 +454,9 @@ LL_CPUID_GetConstant(void) {
   * @rmtoll SCB_CPUID    PARTNO        LL_CPUID_GetParNo
   * @retval Value should be equal to 0xC23 for Cortex-M3
   */
-__STATIC_INLINE uint32_t
-
-LL_CPUID_GetParNo(void) {
-    return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_PARTNO_Msk) >> SCB_CPUID_PARTNO_Pos);
+__STATIC_INLINE uint32_t LL_CPUID_GetParNo(void)
+{
+  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_PARTNO_Msk) >> SCB_CPUID_PARTNO_Pos);
 }
 
 /**
@@ -457,10 +464,9 @@ LL_CPUID_GetParNo(void) {
   * @rmtoll SCB_CPUID    REVISION      LL_CPUID_GetRevision
   * @retval Value between 0 and 255 (0x0: patch 0, 0x1: patch 1)
   */
-__STATIC_INLINE uint32_t
-
-LL_CPUID_GetRevision(void) {
-    return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_REVISION_Msk) >> SCB_CPUID_REVISION_Pos);
+__STATIC_INLINE uint32_t LL_CPUID_GetRevision(void)
+{
+  return (uint32_t)(READ_BIT(SCB->CPUID, SCB_CPUID_REVISION_Msk) >> SCB_CPUID_REVISION_Pos);
 }
 
 /**

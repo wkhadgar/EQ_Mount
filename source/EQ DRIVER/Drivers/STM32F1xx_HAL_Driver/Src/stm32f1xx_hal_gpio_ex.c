@@ -78,29 +78,32 @@
   *   This parameter can be a value of @ref GPIOEx_EVENTOUT_PIN.
   * @retval None
   */
-void HAL_GPIOEx_ConfigEventout(uint32_t GPIO_PortSource, uint32_t GPIO_PinSource) {
-    /* Verify the parameters */
-    assert_param(IS_AFIO_EVENTOUT_PORT(GPIO_PortSource));
-    assert_param(IS_AFIO_EVENTOUT_PIN(GPIO_PinSource));
+void HAL_GPIOEx_ConfigEventout(uint32_t GPIO_PortSource, uint32_t GPIO_PinSource)
+{
+  /* Verify the parameters */
+  assert_param(IS_AFIO_EVENTOUT_PORT(GPIO_PortSource));
+  assert_param(IS_AFIO_EVENTOUT_PIN(GPIO_PinSource));
 
-    /* Apply the new configuration */
-    MODIFY_REG(AFIO->EVCR, (AFIO_EVCR_PORT) | (AFIO_EVCR_PIN), (GPIO_PortSource) | (GPIO_PinSource));
+  /* Apply the new configuration */
+  MODIFY_REG(AFIO->EVCR, (AFIO_EVCR_PORT) | (AFIO_EVCR_PIN), (GPIO_PortSource) | (GPIO_PinSource));
 }
 
 /**
   * @brief  Enables the Event Output.
   * @retval None
   */
-void HAL_GPIOEx_EnableEventout(void) {
-    SET_BIT(AFIO->EVCR, AFIO_EVCR_EVOE);
+void HAL_GPIOEx_EnableEventout(void)
+{
+  SET_BIT(AFIO->EVCR, AFIO_EVCR_EVOE);
 }
 
 /**
   * @brief  Disables the Event Output.
   * @retval None
   */
-void HAL_GPIOEx_DisableEventout(void) {
-    CLEAR_BIT(AFIO->EVCR, AFIO_EVCR_EVOE);
+void HAL_GPIOEx_DisableEventout(void)
+{
+  CLEAR_BIT(AFIO->EVCR, AFIO_EVCR_EVOE);
 }
 
 /**

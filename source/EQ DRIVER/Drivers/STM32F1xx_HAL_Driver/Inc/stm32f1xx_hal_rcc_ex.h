@@ -225,37 +225,38 @@ typedef struct
 /**
   * @brief  RCC Internal/External Oscillator (HSE, HSI, LSE and LSI) configuration structure definition
   */
-typedef struct {
-    uint32_t OscillatorType;       /*!< The oscillators to be configured.
+typedef struct
+{
+  uint32_t OscillatorType;       /*!< The oscillators to be configured.
                                        This parameter can be a value of @ref RCC_Oscillator_Type */
 
 #if defined(STM32F105xC) || defined(STM32F107xC)
-    uint32_t Prediv1Source;       /*!<  The Prediv1 source value.
+  uint32_t Prediv1Source;       /*!<  The Prediv1 source value.
                                        This parameter can be a value of @ref RCCEx_Prediv1_Source */
 #endif /* STM32F105xC || STM32F107xC */
 
-    uint32_t HSEState;              /*!< The new state of the HSE.
+  uint32_t HSEState;              /*!< The new state of the HSE.
                                        This parameter can be a value of @ref RCC_HSE_Config */
 
-    uint32_t HSEPredivValue;       /*!<  The Prediv1 factor value (named PREDIV1 or PLLXTPRE in RM)
+  uint32_t HSEPredivValue;       /*!<  The Prediv1 factor value (named PREDIV1 or PLLXTPRE in RM)
                                        This parameter can be a value of @ref RCCEx_Prediv1_Factor */
 
-    uint32_t LSEState;              /*!<  The new state of the LSE.
+  uint32_t LSEState;              /*!<  The new state of the LSE.
                                         This parameter can be a value of @ref RCC_LSE_Config */
 
-    uint32_t HSIState;              /*!< The new state of the HSI.
+  uint32_t HSIState;              /*!< The new state of the HSI.
                                        This parameter can be a value of @ref RCC_HSI_Config */
 
-    uint32_t HSICalibrationValue;   /*!< The HSI calibration trimming value (default is RCC_HSICALIBRATION_DEFAULT).
+  uint32_t HSICalibrationValue;   /*!< The HSI calibration trimming value (default is RCC_HSICALIBRATION_DEFAULT).
                                        This parameter must be a number between Min_Data = 0x00 and Max_Data = 0x1F */
 
-    uint32_t LSIState;              /*!<  The new state of the LSI.
+  uint32_t LSIState;              /*!<  The new state of the LSI.
                                         This parameter can be a value of @ref RCC_LSI_Config */
 
-    RCC_PLLInitTypeDef PLL;         /*!< PLL structure parameters */
+  RCC_PLLInitTypeDef PLL;         /*!< PLL structure parameters */
 
 #if defined(STM32F105xC) || defined(STM32F107xC)
-    RCC_PLL2InitTypeDef PLL2;         /*!< PLL2 structure parameters */
+  RCC_PLL2InitTypeDef PLL2;         /*!< PLL2 structure parameters */
 #endif /* STM32F105xC || STM32F107xC */
 } RCC_OscInitTypeDef;
 
@@ -279,26 +280,27 @@ typedef struct
 /**
   * @brief  RCC extended clocks structure definition
   */
-typedef struct {
-    uint32_t PeriphClockSelection;      /*!< The Extended Clock to be configured.
+typedef struct
+{
+  uint32_t PeriphClockSelection;      /*!< The Extended Clock to be configured.
                                        This parameter can be a value of @ref RCCEx_Periph_Clock_Selection */
 
-    uint32_t RTCClockSelection;         /*!< specifies the RTC clock source.
+  uint32_t RTCClockSelection;         /*!< specifies the RTC clock source.
                                        This parameter can be a value of @ref RCC_RTC_Clock_Source */
 
-    uint32_t AdcClockSelection;         /*!< ADC clock source
+  uint32_t AdcClockSelection;         /*!< ADC clock source
                                        This parameter can be a value of @ref RCCEx_ADC_Prescaler */
 
 #if defined(STM32F103xE) || defined(STM32F103xG) || defined(STM32F105xC)\
  || defined(STM32F107xC)
-    uint32_t I2s2ClockSelection;         /*!< I2S2 clock source
+  uint32_t I2s2ClockSelection;         /*!< I2S2 clock source
                                        This parameter can be a value of @ref RCCEx_I2S2_Clock_Source */
 
-    uint32_t I2s3ClockSelection;         /*!< I2S3 clock source
+  uint32_t I2s3ClockSelection;         /*!< I2S3 clock source
                                        This parameter can be a value of @ref RCCEx_I2S3_Clock_Source */
 
 #if defined(STM32F105xC) || defined(STM32F107xC)
-    RCC_PLLI2SInitTypeDef PLLI2S;  /*!< PLL I2S structure parameters
+  RCC_PLLI2SInitTypeDef PLLI2S;  /*!< PLL I2S structure parameters
                                       This parameter will be used only when PLLI2S is selected as Clock Source I2S2 or I2S3 */
 
 #endif /* STM32F105xC || STM32F107xC */
@@ -307,7 +309,7 @@ typedef struct {
 #if defined(STM32F102x6) || defined(STM32F102xB) || defined(STM32F103x6)\
  || defined(STM32F103xB) || defined(STM32F103xE) || defined(STM32F103xG)\
  || defined(STM32F105xC) || defined(STM32F107xC)
-    uint32_t UsbClockSelection;         /*!< USB clock source
+  uint32_t UsbClockSelection;         /*!< USB clock source
                                        This parameter can be a value of @ref RCCEx_USB_Prescaler */
 
 #endif /* STM32F102x6 || STM32F102xB || STM32F103x6 || STM32F103xB || STM32F103xE || STM32F103xG || STM32F105xC || STM32F107xC */
@@ -775,7 +777,7 @@ typedef struct {
   */
 
 #if defined(STM32F103x6) || defined(STM32F103xB) || defined(STM32F103xE)\
- || defined(STM32F103xG) || defined(STM32F105xC) || defined(STM32F107xC)
+ || defined(STM32F103xG) || defined(STM32F105xC) ||defined(STM32F107xC)
 #define __HAL_RCC_CAN1_CLK_ENABLE()   do { \
                                         __IO uint32_t tmpreg; \
                                         SET_BIT(RCC->APB1ENR, RCC_APB1ENR_CAN1EN);\
@@ -1069,7 +1071,7 @@ typedef struct {
   */
 
 #if defined(STM32F103x6) || defined(STM32F103xB) || defined(STM32F103xE)\
- || defined(STM32F103xG) || defined(STM32F105xC) || defined(STM32F107xC)
+ || defined(STM32F103xG) || defined(STM32F105xC) ||defined(STM32F107xC)
 #define __HAL_RCC_CAN1_IS_CLK_ENABLED()       ((RCC->APB1ENR & (RCC_APB1ENR_CAN1EN)) != RESET)
 #define __HAL_RCC_CAN1_IS_CLK_DISABLED()      ((RCC->APB1ENR & (RCC_APB1ENR_CAN1EN)) == RESET)
 #endif /* STM32F103x6 || STM32F103xB || STM32F103xE || STM32F103xG || STM32F105xC || STM32F107xC */
@@ -1405,7 +1407,7 @@ typedef struct {
   */
 
 #if defined(STM32F103x6) || defined(STM32F103xB) || defined(STM32F103xE)\
- || defined(STM32F103xG) || defined(STM32F105xC) || defined(STM32F107xC)
+ || defined(STM32F103xG) || defined(STM32F105xC) ||defined(STM32F107xC)
 #define __HAL_RCC_CAN1_FORCE_RESET()        (RCC->APB1RSTR |= (RCC_APB1RSTR_CAN1RST))
 
 #define __HAL_RCC_CAN1_RELEASE_RESET()      (RCC->APB1RSTR &= ~(RCC_APB1RSTR_CAN1RST))
@@ -1854,11 +1856,9 @@ typedef struct {
   * @{
   */
 
-HAL_StatusTypeDef HAL_RCCEx_PeriphCLKConfig(RCC_PeriphCLKInitTypeDef *PeriphClkInit);
-
-void HAL_RCCEx_GetPeriphCLKConfig(RCC_PeriphCLKInitTypeDef *PeriphClkInit);
-
-uint32_t HAL_RCCEx_GetPeriphCLKFreq(uint32_t PeriphClk);
+HAL_StatusTypeDef HAL_RCCEx_PeriphCLKConfig(RCC_PeriphCLKInitTypeDef  *PeriphClkInit);
+void              HAL_RCCEx_GetPeriphCLKConfig(RCC_PeriphCLKInitTypeDef  *PeriphClkInit);
+uint32_t          HAL_RCCEx_GetPeriphCLKFreq(uint32_t PeriphClk);
 
 /**
   * @}

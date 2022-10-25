@@ -1,1 +1,2 @@
-../Core/Src/astro_conv.c:7:6:update_LST	144	static
+../Core/Src/astro_conv.c:7:6:update_LST	72	static
+../Core/Src/astro_conv.c:80:6:astro_start_tracking	8	static

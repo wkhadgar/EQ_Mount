@@ -36,7 +36,7 @@
   * @{
   */
 
-/* Exported types ------------------------------------------------------------*/
+/* Exported types ------------------------------------------------------------*/ 
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /** @defgroup DMAEx_Exported_Macros DMA Extended Exported Macros
@@ -254,7 +254,7 @@
   */
 
 #endif
-
+  
 /**
   * @}
   */
@@ -270,7 +270,7 @@
 #ifdef __cplusplus
 }
 #endif /* STM32F100xE || STM32F101xE || STM32F101xG || STM32F103xE || */
-/* STM32F103xG || STM32F105xC || STM32F107xC */
+       /* STM32F103xG || STM32F105xC || STM32F107xC */
 
 #endif /* __STM32F1xx_HAL_DMA_H */
 

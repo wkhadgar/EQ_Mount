@@ -140,12 +140,13 @@
   *         The pending IRQ priority will be managed only by the subpriority. 
   * @retval None
   */
-void HAL_NVIC_SetPriorityGrouping(uint32_t PriorityGroup) {
-    /* Check the parameters */
-    assert_param(IS_NVIC_PRIORITY_GROUP(PriorityGroup));
-
-    /* Set the PRIGROUP[10:8] bits according to the PriorityGroup parameter value */
-    NVIC_SetPriorityGrouping(PriorityGroup);
+void HAL_NVIC_SetPriorityGrouping(uint32_t PriorityGroup)
+{
+  /* Check the parameters */
+  assert_param(IS_NVIC_PRIORITY_GROUP(PriorityGroup));
+  
+  /* Set the PRIGROUP[10:8] bits according to the PriorityGroup parameter value */
+  NVIC_SetPriorityGrouping(PriorityGroup);
 }
 
 /**
@@ -161,16 +162,17 @@ void HAL_NVIC_SetPriorityGrouping(uint32_t PriorityGroup) {
   *         A lower priority value indicates a higher priority.          
   * @retval None
   */
-void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority) {
-    uint32_t prioritygroup = 0x00U;
-
-    /* Check the parameters */
-    assert_param(IS_NVIC_SUB_PRIORITY(SubPriority));
-    assert_param(IS_NVIC_PREEMPTION_PRIORITY(PreemptPriority));
-
-    prioritygroup = NVIC_GetPriorityGrouping();
-
-    NVIC_SetPriority(IRQn, NVIC_EncodePriority(prioritygroup, PreemptPriority, SubPriority));
+void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority)
+{ 
+  uint32_t prioritygroup = 0x00U;
+  
+  /* Check the parameters */
+  assert_param(IS_NVIC_SUB_PRIORITY(SubPriority));
+  assert_param(IS_NVIC_PREEMPTION_PRIORITY(PreemptPriority));
+  
+  prioritygroup = NVIC_GetPriorityGrouping();
+  
+  NVIC_SetPriority(IRQn, NVIC_EncodePriority(prioritygroup, PreemptPriority, SubPriority));
 }
 
 /**
@@ -182,12 +184,13 @@ void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t Sub
   *         (For the complete STM32 Devices IRQ Channels list, please refer to the appropriate CMSIS device file (stm32f10xxx.h))
   * @retval None
   */
-void HAL_NVIC_EnableIRQ(IRQn_Type IRQn) {
-    /* Check the parameters */
-    assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
+void HAL_NVIC_EnableIRQ(IRQn_Type IRQn)
+{
+  /* Check the parameters */
+  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
 
-    /* Enable interrupt */
-    NVIC_EnableIRQ(IRQn);
+  /* Enable interrupt */
+  NVIC_EnableIRQ(IRQn);
 }
 
 /**
@@ -197,21 +200,23 @@ void HAL_NVIC_EnableIRQ(IRQn_Type IRQn) {
   *         (For the complete STM32 Devices IRQ Channels list, please refer to the appropriate CMSIS device file (stm32f10xxx.h))  
   * @retval None
   */
-void HAL_NVIC_DisableIRQ(IRQn_Type IRQn) {
-    /* Check the parameters */
-    assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
+void HAL_NVIC_DisableIRQ(IRQn_Type IRQn)
+{
+  /* Check the parameters */
+  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
 
-    /* Disable interrupt */
-    NVIC_DisableIRQ(IRQn);
+  /* Disable interrupt */
+  NVIC_DisableIRQ(IRQn);
 }
 
 /**
   * @brief  Initiates a system reset request to reset the MCU.
   * @retval None
   */
-void HAL_NVIC_SystemReset(void) {
-    /* System Reset */
-    NVIC_SystemReset();
+void HAL_NVIC_SystemReset(void)
+{
+  /* System Reset */
+  NVIC_SystemReset();
 }
 
 /**
@@ -221,8 +226,9 @@ void HAL_NVIC_SystemReset(void) {
   * @retval status:  - 0  Function succeeded.
   *                  - 1  Function failed.
   */
-uint32_t HAL_SYSTICK_Config(uint32_t TicksNumb) {
-    return SysTick_Config(TicksNumb);
+uint32_t HAL_SYSTICK_Config(uint32_t TicksNumb)
+{
+   return SysTick_Config(TicksNumb);
 }
 /**
   * @}
@@ -335,9 +341,10 @@ void HAL_MPU_ConfigRegion(MPU_Region_InitTypeDef *MPU_Init)
   * @brief  Gets the priority grouping field from the NVIC Interrupt Controller.
   * @retval Priority grouping field (SCB->AIRCR [10:8] PRIGROUP field)
   */
-uint32_t HAL_NVIC_GetPriorityGrouping(void) {
-    /* Get the PRIGROUP[10:8] field value */
-    return NVIC_GetPriorityGrouping();
+uint32_t HAL_NVIC_GetPriorityGrouping(void)
+{
+  /* Get the PRIGROUP[10:8] field value */
+  return NVIC_GetPriorityGrouping();
 }
 
 /**
@@ -361,11 +368,12 @@ uint32_t HAL_NVIC_GetPriorityGrouping(void) {
   * @param  pSubPriority: Pointer on the Subpriority value (starting from 0).
   * @retval None
   */
-void HAL_NVIC_GetPriority(IRQn_Type IRQn, uint32_t PriorityGroup, uint32_t *pPreemptPriority, uint32_t *pSubPriority) {
-    /* Check the parameters */
-    assert_param(IS_NVIC_PRIORITY_GROUP(PriorityGroup));
-    /* Get priority for Cortex-M system or device specific interrupts */
-    NVIC_DecodePriority(NVIC_GetPriority(IRQn), PriorityGroup, pPreemptPriority, pSubPriority);
+void HAL_NVIC_GetPriority(IRQn_Type IRQn, uint32_t PriorityGroup, uint32_t *pPreemptPriority, uint32_t *pSubPriority)
+{
+  /* Check the parameters */
+  assert_param(IS_NVIC_PRIORITY_GROUP(PriorityGroup));
+ /* Get priority for Cortex-M system or device specific interrupts */
+  NVIC_DecodePriority(NVIC_GetPriority(IRQn), PriorityGroup, pPreemptPriority, pSubPriority);
 }
 
 /**
@@ -375,12 +383,13 @@ void HAL_NVIC_GetPriority(IRQn_Type IRQn, uint32_t PriorityGroup, uint32_t *pPre
   *         (For the complete STM32 Devices IRQ Channels list, please refer to the appropriate CMSIS device file (stm32f10xxx.h))  
   * @retval None
   */
-void HAL_NVIC_SetPendingIRQ(IRQn_Type IRQn) {
-    /* Check the parameters */
-    assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
-
-    /* Set interrupt pending */
-    NVIC_SetPendingIRQ(IRQn);
+void HAL_NVIC_SetPendingIRQ(IRQn_Type IRQn)
+{
+  /* Check the parameters */
+  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
+  
+  /* Set interrupt pending */
+  NVIC_SetPendingIRQ(IRQn);
 }
 
 /**
@@ -392,12 +401,13 @@ void HAL_NVIC_SetPendingIRQ(IRQn_Type IRQn) {
   * @retval status: - 0  Interrupt status is not pending.
   *                 - 1  Interrupt status is pending.
   */
-uint32_t HAL_NVIC_GetPendingIRQ(IRQn_Type IRQn) {
-    /* Check the parameters */
-    assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
+uint32_t HAL_NVIC_GetPendingIRQ(IRQn_Type IRQn)
+{
+  /* Check the parameters */
+  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
 
-    /* Return 1 if pending else 0 */
-    return NVIC_GetPendingIRQ(IRQn);
+  /* Return 1 if pending else 0 */
+  return NVIC_GetPendingIRQ(IRQn);
 }
 
 /**
@@ -407,12 +417,13 @@ uint32_t HAL_NVIC_GetPendingIRQ(IRQn_Type IRQn) {
   *         (For the complete STM32 Devices IRQ Channels list, please refer to the appropriate CMSIS device file (stm32f10xxx.h))  
   * @retval None
   */
-void HAL_NVIC_ClearPendingIRQ(IRQn_Type IRQn) {
-    /* Check the parameters */
-    assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
+void HAL_NVIC_ClearPendingIRQ(IRQn_Type IRQn)
+{
+  /* Check the parameters */
+  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
 
-    /* Clear pending interrupt */
-    NVIC_ClearPendingIRQ(IRQn);
+  /* Clear pending interrupt */
+  NVIC_ClearPendingIRQ(IRQn);
 }
 
 /**
@@ -423,12 +434,13 @@ void HAL_NVIC_ClearPendingIRQ(IRQn_Type IRQn) {
   * @retval status: - 0  Interrupt status is not pending.
   *                 - 1  Interrupt status is pending.
   */
-uint32_t HAL_NVIC_GetActive(IRQn_Type IRQn) {
-    /* Check the parameters */
-    assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
+uint32_t HAL_NVIC_GetActive(IRQn_Type IRQn)
+{
+  /* Check the parameters */
+  assert_param(IS_NVIC_DEVICE_IRQ(IRQn));
 
-    /* Return 1 if active else 0 */
-    return NVIC_GetActive(IRQn);
+  /* Return 1 if active else 0 */
+  return NVIC_GetActive(IRQn);
 }
 
 /**
@@ -439,32 +451,38 @@ uint32_t HAL_NVIC_GetActive(IRQn_Type IRQn) {
   *             @arg SYSTICK_CLKSOURCE_HCLK: AHB clock selected as SysTick clock source.
   * @retval None
   */
-void HAL_SYSTICK_CLKSourceConfig(uint32_t CLKSource) {
-    /* Check the parameters */
-    assert_param(IS_SYSTICK_CLK_SOURCE(CLKSource));
-    if (CLKSource == SYSTICK_CLKSOURCE_HCLK) {
-        SysTick->CTRL |= SYSTICK_CLKSOURCE_HCLK;
-    } else {
-        SysTick->CTRL &= ~SYSTICK_CLKSOURCE_HCLK;
-    }
+void HAL_SYSTICK_CLKSourceConfig(uint32_t CLKSource)
+{
+  /* Check the parameters */
+  assert_param(IS_SYSTICK_CLK_SOURCE(CLKSource));
+  if (CLKSource == SYSTICK_CLKSOURCE_HCLK)
+  {
+    SysTick->CTRL |= SYSTICK_CLKSOURCE_HCLK;
+  }
+  else
+  {
+    SysTick->CTRL &= ~SYSTICK_CLKSOURCE_HCLK;
+  }
 }
 
 /**
   * @brief  This function handles SYSTICK interrupt request.
   * @retval None
   */
-void HAL_SYSTICK_IRQHandler(void) {
-    HAL_SYSTICK_Callback();
+void HAL_SYSTICK_IRQHandler(void)
+{
+  HAL_SYSTICK_Callback();
 }
 
 /**
   * @brief  SYSTICK callback.
   * @retval None
   */
-__weak void HAL_SYSTICK_Callback(void) {
-    /* NOTE : This function Should not be modified, when the callback is needed,
-              the HAL_SYSTICK_Callback could be implemented in the user file
-     */
+__weak void HAL_SYSTICK_Callback(void)
+{
+  /* NOTE : This function Should not be modified, when the callback is needed,
+            the HAL_SYSTICK_Callback could be implemented in the user file
+   */
 }
 
 /**

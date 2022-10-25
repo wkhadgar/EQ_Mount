@@ -11,16 +11,16 @@
 #include "main.h"
 
 typedef enum {
-    selected,
-    rotary_triggered,
-    ccw,
-    update_display,
-    wake,
-    sleep,
-    low_battery,
-    toggle_horse,
-    on_menu,
-    IRQ_vars_amount,
+	selected,
+	rotary_triggered,
+	ccw,
+	update_display,
+	wake,
+	sleep,
+	low_battery,
+	toggle_horse,
+	on_menu,
+	IRQ_vars_amount,
 } bool_var_t;
 
 volatile static bool boolVariables[IRQ_vars_amount] = {0};

@@ -12,7 +12,6 @@ RM := rm -rf
 -include Drivers/Steppers/Src/subdir.mk
 -include Drivers/STM32F1xx_HAL_Driver/Src/subdir.mk
 -include Drivers/GNSS/Src/subdir.mk
--include Drivers/Display/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk

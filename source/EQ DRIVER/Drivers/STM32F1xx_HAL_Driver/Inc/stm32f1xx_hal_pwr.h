@@ -40,18 +40,19 @@
 
 /** @defgroup PWR_Exported_Types PWR Exported Types
   * @{
-  */
+  */ 
 
 /**
   * @brief  PWR PVD configuration structure definition
   */
-typedef struct {
-    uint32_t PVDLevel;   /*!< PVDLevel: Specifies the PVD detection level.
+typedef struct
+{
+  uint32_t PVDLevel;   /*!< PVDLevel: Specifies the PVD detection level.
                             This parameter can be a value of @ref PWR_PVD_detection_level */
 
-    uint32_t Mode;      /*!< Mode: Specifies the operating mode for the selected pins.
+  uint32_t Mode;      /*!< Mode: Specifies the operating mode for the selected pins.
                            This parameter can be a value of @ref PWR_PVD_Mode */
-} PWR_PVDTypeDef;
+}PWR_PVDTypeDef;
 
 
 /**
@@ -63,7 +64,7 @@ typedef struct {
 
 /** @addtogroup PWR_Private_Constants
   * @{
-  */
+  */ 
 
 #define PWR_EXTI_LINE_PVD  ((uint32_t)0x00010000)  /*!< External interrupt line 16 Connected to the PVD EXTI Line */
 
@@ -71,12 +72,12 @@ typedef struct {
   * @}
   */
 
-
+ 
 /* Exported constants --------------------------------------------------------*/
 
 /** @defgroup PWR_Exported_Constants PWR Exported Constants
   * @{
-  */
+  */ 
 
 /** @defgroup PWR_PVD_detection_level PWR PVD detection level
   * @{
@@ -88,8 +89,8 @@ typedef struct {
 #define PWR_PVDLEVEL_4                  PWR_CR_PLS_2V6
 #define PWR_PVDLEVEL_5                  PWR_CR_PLS_2V7
 #define PWR_PVDLEVEL_6                  PWR_CR_PLS_2V8
-#define PWR_PVDLEVEL_7                  PWR_CR_PLS_2V9
-
+#define PWR_PVDLEVEL_7                  PWR_CR_PLS_2V9 
+                                                          
 /**
   * @}
   */
@@ -297,7 +298,7 @@ typedef struct {
 #define IS_PWR_PVD_MODE(MODE) (((MODE) == PWR_PVD_MODE_IT_RISING)|| ((MODE) == PWR_PVD_MODE_IT_FALLING) || \
                               ((MODE) == PWR_PVD_MODE_IT_RISING_FALLING) || ((MODE) == PWR_PVD_MODE_EVENT_RISING) || \
                               ((MODE) == PWR_PVD_MODE_EVENT_FALLING) || ((MODE) == PWR_PVD_MODE_EVENT_RISING_FALLING) || \
-                              ((MODE) == PWR_PVD_MODE_NORMAL))
+                              ((MODE) == PWR_PVD_MODE_NORMAL)) 
 
 #define IS_PWR_WAKEUP_PIN(PIN) (((PIN) == PWR_WAKEUP_PIN1))
 
@@ -319,7 +320,7 @@ typedef struct {
 /** @addtogroup PWR_Exported_Functions PWR Exported Functions
   * @{
   */
-
+  
 /** @addtogroup PWR_Exported_Functions_Group1 Initialization and de-initialization functions 
   * @{
   */
@@ -356,6 +357,7 @@ void HAL_PWR_EnableSleepOnExit(void);
 void HAL_PWR_DisableSleepOnExit(void);
 void HAL_PWR_EnableSEVOnPend(void);
 void HAL_PWR_DisableSEVOnPend(void);
+
 
 
 void HAL_PWR_PVD_IRQHandler(void);

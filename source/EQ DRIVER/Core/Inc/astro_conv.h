@@ -7,6 +7,7 @@
 
 #include "steppers.h"
 #include <math.h>
+#include "tim.h"
 #include "PA6H.h"
 
 #define ASTRO_TARGET_NAME_MAX_CHARACTERS 27
@@ -28,6 +29,7 @@ typedef struct astro_target {
 
 typedef struct mount_data {
     double LMST;
+    uint16_t fine_adjusts;
     GNSS_data_t GNSS_data;
     astro_pos_t orientation;
     struct axis {

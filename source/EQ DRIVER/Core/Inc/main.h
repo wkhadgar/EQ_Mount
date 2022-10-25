@@ -60,14 +60,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define V_BATTERY_Pin GPIO_PIN_0
-#define V_BATTERY_GPIO_Port GPIOA
-#define FINE_ADJUST_Pin GPIO_PIN_1
+#define FINE_ADJUST_Pin GPIO_PIN_0
 #define FINE_ADJUST_GPIO_Port GPIOA
-#define VDD_SIGNAL_Pin GPIO_PIN_4
-#define VDD_SIGNAL_GPIO_Port GPIOA
-#define GND_SIGNAL_Pin GPIO_PIN_5
-#define GND_SIGNAL_GPIO_Port GPIOA
 #define M1_STEP_Pin GPIO_PIN_6
 #define M1_STEP_GPIO_Port GPIOA
 #define M1_ENABLE_Pin GPIO_PIN_7
@@ -80,14 +74,10 @@ void Error_Handler(void);
 #define M2_ENABLE_GPIO_Port GPIOB
 #define M2_STEP_Pin GPIO_PIN_11
 #define M2_STEP_GPIO_Port GPIOB
-#define SELECT_Pin GPIO_PIN_12
-#define SELECT_GPIO_Port GPIOB
-#define SELECT_EXTI_IRQn EXTI15_10_IRQn
-#define ROTARY_CLKW_Pin GPIO_PIN_13
-#define ROTARY_CLKW_GPIO_Port GPIOB
-#define ROTARY_TRIG_Pin GPIO_PIN_14
-#define ROTARY_TRIG_GPIO_Port GPIOB
-#define ROTARY_TRIG_EXTI_IRQn EXTI15_10_IRQn
+#define LED_GND_Pin GPIO_PIN_13
+#define LED_GND_GPIO_Port GPIOB
+#define SPI_SCN_Pin GPIO_PIN_14
+#define SPI_SCN_GPIO_Port GPIOB
 #define GPS_TX_Pin GPIO_PIN_9
 #define GPS_TX_GPIO_Port GPIOA
 #define GPS_RX_Pin GPIO_PIN_10
@@ -96,10 +86,8 @@ void Error_Handler(void);
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
 #define SWCLK_GPIO_Port GPIOA
-#define SCL_Pin GPIO_PIN_6
-#define SCL_GPIO_Port GPIOB
-#define SDA_Pin GPIO_PIN_7
-#define SDA_GPIO_Port GPIOB
+#define LED_PWM_Pin GPIO_PIN_8
+#define LED_PWM_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

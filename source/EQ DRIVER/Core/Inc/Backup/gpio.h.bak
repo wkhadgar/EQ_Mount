@@ -40,32 +40,6 @@ void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
-
-typedef enum {
-    AN_V_BAT = 0,
-    OUT_FINE_ADJUST,
-    OUT_VDD_SIG,
-    OUT_GND_SIG,
-    OUT_RA_DIR,
-    OUT_RA_EN,
-    OUT_DEC_DIR,
-    OUT_DEC_EN,
-    IN_SELECT,
-    IN_ROTARY_CLKW,
-    IN_ROTARY_TRIG,
-    I2C_SCL,
-    I2C_SDA,
-    _pin_amount
-
-} pin_t;
-
-bool digitalRead(pin_t pin);
-
-void digitalWrite(pin_t pin, bool value);
-
-void digitalToggle(pin_t pin);
-
-void digitalPulse(pin_t pin, uint8_t pulse_ms);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

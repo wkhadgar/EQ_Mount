@@ -19,19 +19,15 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
-#include "i2c.h"
+#include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-
+#include "stdint.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "horse_running.h"
-#include "bitmaps.h"
-#include "sh1106.h"
 #include "variables.h"
-#include "bkp_regs.h"
 #include "steppers.h"
 #include "astro_conv.h"
 #include "PA6H.h"
@@ -61,6 +57,7 @@ typedef struct rotary_data {
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+
 #define TICKS_NOW HAL_GetTick() /** < Current sys tick value */
 #define POSITIVE_MODULUS(value, mod) (((value) < 0) ? ((mod) -1) : ((value) % (mod)))
 #define BOOLIFY(value) ((value) >= 1) ? 1 : 0
@@ -82,6 +79,10 @@ static mount_data_t EQM = {
         .axis_stepper = {
                 .DEC = {
                         .axis = Declination,
+                        .timer_config = {
+                                .TIMx = TIM3,
+                                .htimx = &htim3,
+                        },
                         .step_pin = {
                                 .GPIO = M2_STEP_GPIO_Port,
                                 .port = M2_STEP_Pin,
@@ -97,6 +98,10 @@ static mount_data_t EQM = {
                 },
                 .RA = {
                         .axis = Right_Ascension,
+                        .timer_config = {
+                                .TIMx = TIM2,
+                                .htimx = &htim2,
+                        },
                         .step_pin = {
                                 .GPIO = M1_STEP_GPIO_Port,
                                 .port = M1_STEP_Pin,
@@ -113,8 +118,10 @@ static mount_data_t EQM = {
         }
 };
 
-/** menu options (limited to given size) */
-enum menu_option {
+/**
+ * @brief menu options enum
+ */
+enum menu_options {
     DEC_ = 0,
     RA,
     hemisphere,
@@ -125,18 +132,22 @@ enum menu_option {
     save_configs,
     MENU_SIZE, //must be the last value
 };
-const char *menu_str[] = {
-        "DEC",
-        "R.A",
-        "Hemisferio",
-        "Modo automatico",
-        "Modo manual",
-        "Contraste",
-        "Luz da tela",
-        "Salvar configs",
-};
-uint16_t menu_op_value[MENU_SIZE] = {0};
 
+/**
+ * @brief Strings to the menu
+ */
+const char* menu_str[MENU_SIZE] = {
+        [DEC_]           = "DEC",
+        [RA]             = "R.A",
+        [hemisphere]     = "Hemisferio",
+        [automatic_mode] = "Modo automatico",
+        [manual_mode]    = "Modo manual",
+        [brilho_tela]    = "Contraste",
+        [tempo_tela]     = "Luz da tela",
+        [save_configs]   = "Salvar configs",
+};
+
+uint16_t menu_op_value[MENU_SIZE] = {0};
 
 uint32_t last_move_ticks = 0; // to track time passed in ms with HAL_GetTick()
 
@@ -164,21 +175,14 @@ uint8_t timer_pre_scaler = 1;
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
-#define CURRENT_SELECTION (menu_head+menu_selection)
-
-/**
- * @brief Calculates the attached battery to the A_V_BAT pin charge.
- *
- * @retval uint8_t Battery charge in % value.
- */
-uint8_t get_bat_percentage(void);
+#define CURRENT_SELECTION() (menu_head+menu_selection)
 
 /**
  * @brief Deals with the rotary encoder changes
  *
  * @param rotary_data [in] Ponteiro da struct com as informações dos eventos do rotary encoder
  */
-void handle_rotary_events(rotary_data_t *rotary_data);
+void handle_rotary_events(rotary_data_t* rotary_data);
 
 /**
  * @brief Manage the changes in the menu, updating position variables and value previews.
@@ -188,25 +192,25 @@ void handle_rotary_events(rotary_data_t *rotary_data);
  * @param op_value [out] Value to be updated when not in menu
  * @param increase boolean telling whether to increase or decrease the current screen parameters
  */
-void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t *op_value, int8_t increase);
+void handle_menu_changes(uint8_t* current_menu_top, uint8_t* arrow_row, uint16_t* op_value, int8_t increase);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-    if (GPIO_Pin == ROTARY_TRIG_Pin) {
-        set_flag(rotary_triggered);
-        if (ROTARY_CLKW_GPIO_Port->IDR & ROTARY_CLKW_Pin) {
-            set_flag(ccw);
-        }
-    } else if (GPIO_Pin == SELECT_Pin) {
-        set_flag(selected);
-    }
-}
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+//    if (GPIO_Pin == ROTARY_TRIG_Pin) {
+//        set_flag(rotary_triggered);
+//        if (ROTARY_CLKW_GPIO_Port->IDR & ROTARY_CLKW_Pin) {
+//            set_flag(ccw);
+//        }
+//    } else if (GPIO_Pin == SELECT_Pin) {
+//        set_flag(selected);
+//    }
+//}
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
     if (huart == &huart1) {
         if (GNSS_UART_CallBack(&EQM.GNSS_data)) {
             update_LST(&EQM);
@@ -243,55 +247,41 @@ int main(void) {
 
     /* Initialize all configured peripherals */
     MX_GPIO_Init();
-    MX_I2C1_Init();
-    MX_ADC2_Init();
     MX_TIM2_Init();
     MX_ADC1_Init();
     MX_TIM3_Init();
     MX_USART1_UART_Init();
+    MX_SPI1_Init();
+    MX_TIM4_Init();
     /* USER CODE BEGIN 2 */
 
-    digitalWrite(OUT_GND_SIG, 0); /** emulated gnd */
-    digitalWrite(OUT_VDD_SIG, 1); /** reference voltage */
+    //digitalWrite(, 0); /** emulated gnd */
+    //digitalWrite(OUT_VDD_SIG, 1); /** reference voltage */
 
     HAL_Delay(500);
-    SH1106_cleanInit();
+    //SH1106_cleanInit();
     GNSS_init();
 
-    /** data recover */
-
-#if CHECK_BATTERY_STATUS
-    battery_charge = get_bat_percentage();
-#endif /** CHECK_BATTERY_STATUS */
-
-    menu_op_value[brilho_tela] = BKP_read(0);
-    menu_op_value[hemisphere] = BKP_read(1);
-    menu_op_value[tempo_tela] = BKP_read(2);
-
-    /**start logo display */
-    SH1106_drawBitmapFullscreen(eqmount_logo);
-    SH1106_flush();
-    SH1106_clear();
-    HAL_Delay(2500);
+//    /**start logo display */
+//    SH1106_drawBitmapFullscreen(eqmount_logo);
+//    SH1106_flush();
+//    SH1106_clear();
+//    HAL_Delay(2500);
 
 #if ENABLE_FAKE_LOAD
-    /** transition to menu fake load */
-    SH1106_printStr(16, 15, "Carregando Menu", fnt5x7);
-    for (uint8_t s = 0; s <= 100; s += 2) {
-        SH1106_drawRoundRectFill(s, 7, 32, 110, 8);
-        SH1106_flush();
-        HAL_Delay(1);
-    }
+    //    /** transition to menu fake load */
+    //    SH1106_printStr(16, 15, "Carregando Menu", fnt5x7);
+    //    for (uint8_t s = 0; s <= 100; s += 2) {
+    //        SH1106_drawRoundRectFill(s, 7, 32, 110, 8);
+    //        SH1106_flush();
+    //        HAL_Delay(1);
+    //    }
 #endif /** ENABLE_FAKE_LOAD */
 
-    SH1106_clear();
+//    SH1106_clear();
     set_flag(on_menu);
 
     last_move_ticks = TICKS_NOW; /** < start time reference */
-
-#if CHECK_BATTERY_STATUS
-    bat_ticks_update = last_move_ticks; /** < time tracking to help make periodic battery checks */
-#endif /** CHECK_BATTERY_STATUS */
 
     stepper_init(&EQM.axis_stepper.DEC);
     stepper_init(&EQM.axis_stepper.RA);
@@ -305,206 +295,194 @@ int main(void) {
 
         /* USER CODE BEGIN 3 */
 
-        SH1106_clear(); /** < clears buffer, to construct new one and flush it later */
+//        SH1106_clear(); /** < clears buffer, to construct new one and flush it later */
 
         /** horse running easter egg */
-        {
-            if (get_flag(toggle_horse)) {
-                if (frame > 14) frame = 0;
-                SH1106_drawBitmapFullscreen(horse_running[frame++]);
-                SH1106_flush();
-            }
-        }
-
-#if CHECK_BATTERY_STATUS
-        /** battery info */
-        {
-            if (TICKS_NOW - bat_ticks_update > 10000) {
-                battery_charge = get_bat_percentage();
-                if (battery_charge < 20) set_flag(low_battery);
-                bat_ticks_update = TICKS_NOW;
-            }
-            SH1106_drawRoundRectFill(battery_charge, 105, 2, 20, 5);
-            if (get_flag(low_battery)) SH1106_drawBitmap(96, 1, 5, 8, alert);
-        }
-#endif /** CHECK_BATTERY_STATUS */
+//        {
+//            if (get_flag(toggle_horse)) {
+//                if (frame > 14) frame = 0;
+//                SH1106_drawBitmapFullscreen(horse_running[frame++]);
+//                SH1106_flush();
+//            }
+//        }
 
         /** updates on menu related values*/
         {
-            rotary_data_t rotary_events;
-            handle_rotary_events(&rotary_events);
-
-            if (rotary_events.was_pressed) {
-                if ((lock_value != value_preview) && get_flag(on_menu)) { //if value changed
-                    menu_op_value[CURRENT_SELECTION] = value_preview; //saves value to menu
-                    lock_value = value_preview;
-
-                    switch (CURRENT_SELECTION) { /** the given value was updated, then: ... */
-                        case DEC_:
-                            EQM.axis_stepper.DEC.target_position = ((menu_op_value[DEC_] / 60) %
-                                                                    STEPPER_MAX_STEPS); //TODO calcular a proporção correta
-                            break;
-
-                        case hemisphere:
-                            if (menu_op_value[hemisphere]) {
-                                stepper_set_direction(&EQM.axis_stepper.RA, clockwise);
-                            } else {
-                                stepper_set_direction(&EQM.axis_stepper.RA, counter_clockwise);
-                            }
-                            break;
-                    }
-
-                } else if (!get_flag(on_menu)) {
-                    value_preview = menu_op_value[CURRENT_SELECTION]; //gets value from menu
-                }
-
-            } else if (rotary_events.inc) {
-                handle_menu_changes(&menu_head, &menu_selection, &value_preview, rotary_events.inc);
-            }
-
+//            rotary_data_t rotary_events;
+//            handle_rotary_events(&rotary_events);
+//
+//            if (rotary_events.was_pressed) {
+//                if ((lock_value != value_preview) && get_flag(on_menu)) { //if value changed
+//                    menu_op_value[CURRENT_SELECTION()] = value_preview; //saves value to menu
+//                    lock_value = value_preview;
+//
+//                    switch (CURRENT_SELECTION()) { /** the given value was updated, then: ... */
+//                        case DEC_:
+//                            EQM.axis_stepper.DEC.target_position = ((menu_op_value[DEC_] / 60) %
+//                                                                    STEPPER_MAX_STEPS); //TODO calcular a proporção correta
+//                            break;
+//
+//                        case hemisphere:
+//                            if (menu_op_value[hemisphere]) {
+//                                stepper_set_direction(&EQM.axis_stepper.RA, clockwise);
+//                            } else {
+//                                stepper_set_direction(&EQM.axis_stepper.RA, counter_clockwise);
+//                            }
+//                            break;
+//                    }
+//
+//                } else if (!get_flag(on_menu)) {
+//                    value_preview = menu_op_value[CURRENT_SELECTION()]; //gets value from menu
+//                }
+//
+//            } else if (rotary_events.inc) {
+//                handle_menu_changes(&menu_head, &menu_selection, &value_preview, rotary_events.inc);
+//            }
+//
         }
 
         /** drawing the menu */
-        {
-            uint16_t current_x;
-            const uint8_t space_pixel_width = 2;
-            if (get_flag(on_menu)) {
-                set_flag(update_display);
-
-
-                static uint8_t pool_delay = 0;
-                if (get_flag(selected) || pool_delay) {
-                    reset_flag(selected);
-                    pool_delay++;
-                    SH1106_drawBitmap(space_pixel_width, 5 + (12 * menu_selection), 5, 8, arrow);
-                    if (pool_delay >= 10) {
-                        pool_delay = 0;
-                        set_flag(selected);
-                    }
-                } else {
-                    SH1106_drawBitmap(0, 5 + (12 * menu_selection), 5, 8, arrow);
-                }
-
-                for (uint8_t current_drawing_row = 0; current_drawing_row < SCREEN_ROWS; current_drawing_row++) {
-                    current_x = 8;
-                    uint8_t current_y = space_pixel_width + 3 + (12 * current_drawing_row);
-
-                    current_x +=
-                            SH1106_printStr(current_x, current_y, menu_str[menu_head + current_drawing_row], fnt5x7) +
-                            space_pixel_width;
-                    current_x +=
-                            SH1106_printChar(current_x, current_y, ':', fnt5x7) + space_pixel_width;
-                    switch (current_drawing_row + menu_head) {
-
-                        case DEC_:
-                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[DEC_] / 60, fnt5x7) + 1;
-                            current_x += SH1106_printChar(current_x, current_y - 2, 'o', fnt5x7) +
-                                         1; //TODO alterar na lib das fontes o °
-                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[DEC_] % 60, fnt5x7);
-                            SH1106_printChar(current_x, current_y, '\'', fnt5x7);
-                            break;
-                        case RA:
-                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[RA] / 60, fnt5x7) + 1;
-                            current_x += SH1106_printChar(current_x, current_y, 'h', fnt5x7) +
-                                         1; //TODO alterar na lib das fontes o °
-                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[RA] % 60, fnt5x7);
-                            SH1106_printChar(current_x, current_y, 'm', fnt5x7);
-                            break;
-                        case hemisphere:
-                            SH1106_printStr(current_x, current_y, menu_op_value[hemisphere] ? "Norte" : "Sul", fnt5x7);
-                            break;
-                        case automatic_mode:
-                            SH1106_printStr(current_x, current_y, menu_op_value[automatic_mode] ? "ON" : "OFF", fnt5x7);
-                            break;
-                        case manual_mode:
-                            SH1106_printStr(current_x, current_y, menu_op_value[manual_mode] ? "ON" : "OFF", fnt5x7);
-                            break;
-                        case brilho_tela:
-                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[brilho_tela], fnt5x7);
-                            SH1106_printChar(current_x, current_y, '%', fnt5x7);
-                            break;
-                        case tempo_tela:
-                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[tempo_tela], fnt5x7);
-                            SH1106_printChar(current_x, current_y, 's', fnt5x7);
-                            break;
-                        case save_configs:
-                            SH1106_printStr(current_x - 8, current_y, "  ", fnt5x7);
-                            break;
-                        default:
-                            SH1106_printInt(current_x + space_pixel_width, current_y,
-                                            menu_op_value[menu_head + current_drawing_row],
-                                            fnt5x7);
-                            break;
-                    }
-                }
-
-            } else { /** drawing the submenu */
-                set_flag(update_display);
-
-                current_x = space_pixel_width;
-
-                current_x += SH1106_printStr(current_x, 2, menu_str[CURRENT_SELECTION], fnt5x7);
-                SH1106_printStr(current_x, 2, ":", fnt5x7);
-
-                current_x = (SCR_W / 2) - 14;
-                switch (CURRENT_SELECTION) {
-
-                    case DEC_:
-                        current_x -= 5;
-                        value_preview = POSITIVE_MODULUS(value_preview, 21600);
-                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview / 60, fnt7x10) + 1;
-                        current_x += SH1106_printChar(current_x, (SCR_H / 2) - 5, 'o', fnt7x10) +
-                                     1; //TODO alterar na lib das fontes o °
-                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview % 60, fnt7x10);
-                        SH1106_printStr(current_x, SCR_H / 2, "'", fnt7x10);
-                        break;
-                    case RA:
-                        current_x -= 5;
-                        value_preview = POSITIVE_MODULUS(value_preview, 1440);
-                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview / 60, fnt7x10) + 1;
-                        current_x += SH1106_printChar(current_x, SCR_H / 2, 'h', fnt7x10) +
-                                     1; //TODO alterar na lib das fontes o °
-                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview % 60, fnt7x10);
-                        SH1106_printStr(current_x, SCR_H / 2, "m", fnt7x10);
-                        break;
-                    case hemisphere:
-                        current_x -= 5;
-                        value_preview = BOOLIFY(value_preview);
-                        SH1106_printStr(current_x, SCR_H / 2, value_preview ? "Norte" : "Sul", fnt7x10);
-                        break;
-                    case automatic_mode:
-                        value_preview = BOOLIFY(value_preview);
-                        SH1106_printStr(current_x, SCR_H / 2, value_preview ? "ON" : "OFF", fnt7x10);
-                        break;
-                    case manual_mode:
-                        value_preview = BOOLIFY(value_preview);
-                        SH1106_printStr(current_x, SCR_H / 2, value_preview ? "ON" : "OFF", fnt7x10);
-                        break;
-                    case brilho_tela:
-                        value_preview = POSITIVE_MODULUS(value_preview, 100);
-                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview, fnt7x10);
-                        SH1106_printChar(current_x, SCR_H / 2, '%', fnt7x10);
-                        break;
-                    case tempo_tela:
-                        value_preview = POSITIVE_MODULUS(value_preview, 255);
-                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview, fnt7x10);
-                        SH1106_printChar(current_x, SCR_H / 2, 's', fnt7x10);
-                        break;
-                    case save_configs:
-                        set_flag(on_menu);
-                        break;
-                    default:
-                        SH1106_printInt(current_x, SCR_H / 2, value_preview, fnt7x10);
-                }
-
-            }
-        }
+//        {
+//            uint16_t current_x;
+//            const uint8_t space_pixel_width = 2;
+//            if (get_flag(on_menu)) {
+//                set_flag(update_display);
+//
+//
+//                static uint8_t pool_delay = 0;
+//                if (get_flag(selected) || pool_delay) {
+//                    reset_flag(selected);
+//                    pool_delay++;
+//                    SH1106_drawBitmap(space_pixel_width, 5 + (12 * menu_selection), 5, 8, arrow);
+//                    if (pool_delay >= 10) {
+//                        pool_delay = 0;
+//                        set_flag(selected);
+//                    }
+//                } else {
+//                    SH1106_drawBitmap(0, 5 + (12 * menu_selection), 5, 8, arrow);
+//                }
+//
+//                for (uint8_t current_drawing_row = 0; current_drawing_row < SCREEN_ROWS; current_drawing_row++) {
+//                    current_x = 8;
+//                    uint8_t current_y = space_pixel_width + 3 + (12 * current_drawing_row);
+//
+//                    current_x +=
+//                            SH1106_printStr(current_x, current_y, menu_str[menu_head + current_drawing_row], fnt5x7) +
+//                            space_pixel_width;
+//                    current_x +=
+//                            SH1106_printChar(current_x, current_y, ':', fnt5x7) + space_pixel_width;
+//                    switch (current_drawing_row + menu_head) {
+//
+//                        case DEC_:
+//                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[DEC_] / 60, fnt5x7) + 1;
+//                            current_x += SH1106_printChar(current_x, current_y - 2, 'o', fnt5x7) +
+//                                         1; //TODO alterar na lib das fontes o °
+//                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[DEC_] % 60, fnt5x7);
+//                            SH1106_printChar(current_x, current_y, '\'', fnt5x7);
+//                            break;
+//                        case RA:
+//                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[RA] / 60, fnt5x7) + 1;
+//                            current_x += SH1106_printChar(current_x, current_y, 'h', fnt5x7) +
+//                                         1; //TODO alterar na lib das fontes o °
+//                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[RA] % 60, fnt5x7);
+//                            SH1106_printChar(current_x, current_y, 'm', fnt5x7);
+//                            break;
+//                        case hemisphere:
+//                            SH1106_printStr(current_x, current_y, menu_op_value[hemisphere] ? "Norte" : "Sul", fnt5x7);
+//                            break;
+//                        case automatic_mode:
+//                            SH1106_printStr(current_x, current_y, menu_op_value[automatic_mode] ? "ON" : "OFF", fnt5x7);
+//                            break;
+//                        case manual_mode:
+//                            SH1106_printStr(current_x, current_y, menu_op_value[manual_mode] ? "ON" : "OFF", fnt5x7);
+//                            break;
+//                        case brilho_tela:
+//                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[brilho_tela], fnt5x7);
+//                            SH1106_printChar(current_x, current_y, '%', fnt5x7);
+//                            break;
+//                        case tempo_tela:
+//                            current_x += SH1106_printInt(current_x, current_y, menu_op_value[tempo_tela], fnt5x7);
+//                            SH1106_printChar(current_x, current_y, 's', fnt5x7);
+//                            break;
+//                        case save_configs:
+//                            SH1106_printStr(current_x - 8, current_y, "  ", fnt5x7);
+//                            break;
+//                        default:
+//                            SH1106_printInt(current_x + space_pixel_width, current_y,
+//                                            menu_op_value[menu_head + current_drawing_row],
+//                                            fnt5x7);
+//                            break;
+//                    }
+//                }
+//
+//            } else { /** drawing the submenu */
+//                set_flag(update_display);
+//
+//                current_x = space_pixel_width;
+//
+//                current_x += SH1106_printStr(current_x, 2, menu_str[CURRENT_SELECTION], fnt5x7);
+//                SH1106_printStr(current_x, 2, ":", fnt5x7);
+//
+//                current_x = (SCR_W / 2) - 14;
+//                switch (CURRENT_SELECTION) {
+//
+//                    case DEC_:
+//                        current_x -= 5;
+//                        value_preview = POSITIVE_MODULUS(value_preview, 21600);
+//                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview / 60, fnt7x10) + 1;
+//                        current_x += SH1106_printChar(current_x, (SCR_H / 2) - 5, 'o', fnt7x10) +
+//                                     1; //TODO alterar na lib das fontes o °
+//                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview % 60, fnt7x10);
+//                        SH1106_printStr(current_x, SCR_H / 2, "'", fnt7x10);
+//                        break;
+//                    case RA:
+//                        current_x -= 5;
+//                        value_preview = POSITIVE_MODULUS(value_preview, 1440);
+//                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview / 60, fnt7x10) + 1;
+//                        current_x += SH1106_printChar(current_x, SCR_H / 2, 'h', fnt7x10) +
+//                                     1; //TODO alterar na lib das fontes o °
+//                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview % 60, fnt7x10);
+//                        SH1106_printStr(current_x, SCR_H / 2, "m", fnt7x10);
+//                        break;
+//                    case hemisphere:
+//                        current_x -= 5;
+//                        value_preview = BOOLIFY(value_preview);
+//                        SH1106_printStr(current_x, SCR_H / 2, value_preview ? "Norte" : "Sul", fnt7x10);
+//                        break;
+//                    case automatic_mode:
+//                        value_preview = BOOLIFY(value_preview);
+//                        SH1106_printStr(current_x, SCR_H / 2, value_preview ? "ON" : "OFF", fnt7x10);
+//                        break;
+//                    case manual_mode:
+//                        value_preview = BOOLIFY(value_preview);
+//                        SH1106_printStr(current_x, SCR_H / 2, value_preview ? "ON" : "OFF", fnt7x10);
+//                        break;
+//                    case brilho_tela:
+//                        value_preview = POSITIVE_MODULUS(value_preview, 100);
+//                        if (value_preview > 100) value_preview = 100;
+//                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview, fnt7x10);
+//                        SH1106_printChar(current_x, SCR_H / 2, '%', fnt7x10);
+//                        break;
+//                    case tempo_tela:
+//                        value_preview = POSITIVE_MODULUS(value_preview, 255);
+//                        current_x += SH1106_printInt(current_x, SCR_H / 2, value_preview, fnt7x10);
+//                        SH1106_printChar(current_x, SCR_H / 2, 's', fnt7x10);
+//                        break;
+//                    case save_configs:
+//                        set_flag(on_menu);
+//                        break;
+//                    default:
+//                        SH1106_printInt(current_x, SCR_H / 2, value_preview, fnt7x10);
+//                }
+//
+//            }
+//        }
 
 
         /** < checks if changes to the buffer happened, and if so, flush them */
         if (get_flag(update_display)) {
             reset_flag(update_display);
-            SH1106_flush();
+//            SH1106_flush();
         }
     }
     /* USER CODE END 3 */
@@ -553,15 +531,7 @@ void SystemClock_Config(void) {
 }
 
 /* USER CODE BEGIN 4 */
-uint8_t get_bat_percentage(void) {
-    uint16_t read_voltage = voltage_read(5 * 10); //5v * 10 of reference on board
-    uint8_t percent = ((read_voltage >= V_BAT_MIN ? read_voltage : V_BAT_MIN) - V_BAT_MIN) *
-                      (100 / (V_BAT_MAX - V_BAT_MIN));    // converting [bat_min, bat_max] to [0, 100]
-
-    return percent;
-}
-
-void handle_rotary_events(rotary_data_t *rotary_data) {
+void handle_rotary_events(rotary_data_t* rotary_data) {
 
     if (get_flag(rotary_triggered)) { // rotary encoder triggered
         reset_flag(rotary_triggered);
@@ -607,7 +577,7 @@ void handle_rotary_events(rotary_data_t *rotary_data) {
     rotary_data->was_pressed = false;
 }
 
-void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t *op_value, int8_t increase) {
+void handle_menu_changes(uint8_t* current_menu_top, uint8_t* arrow_row, uint16_t* op_value, int8_t increase) {
 
     if (increase && (current_menu_top != NULL) && (arrow_row != NULL) && (op_value != NULL)) {
         if (increase == 1) {
@@ -645,22 +615,48 @@ void handle_menu_changes(uint8_t *current_menu_top, uint8_t *arrow_row, uint16_t
   * @param  htim : TIM handle
   * @retval None
   */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
     /* USER CODE BEGIN Callback 0 */
+    static uint8_t scaler_counter = 0;
+    static bool do_step_increment[3] = {false};
+    static uint16_t current_period = BASE_PERIOD * 8;
     /* USER CODE END Callback 0 */
     if (htim->Instance == TIM1) {
         HAL_IncTick();
     }
-    /* USER CODE BEGIN Callback 1 */
+        /* USER CODE BEGIN Callback 1 */
 #ifdef STEP_PIN_AS_GPIO
-    static uint8_t scaler_counter = 0;
-    if (htim == &htim2) {
-        scaler_counter++;
-        if (timer_pre_scaler == scaler_counter) {
-            if (RA_STEPPER.on_status && menu_op_value[manual_mode]) {
-                half_step(&RA_STEPPER);
+        else if (htim == &htim2) {
+            scaler_counter++;
+            if (timer_pre_scaler == scaler_counter) {
+                if (RA_STEPPER.on_status && menu_op_value[manual_mode]) {
+                    half_step(&RA_STEPPER);
+                }
+                scaler_counter = 0;
             }
-            scaler_counter = 0;
+        }
+#else /** STEP_PIN_AS_GPIO */
+    else if (htim == &htim3) { //M1
+        do_step_increment[Right_Ascension] = !do_step_increment[Right_Ascension];
+        if (do_step_increment[Right_Ascension]) {
+            EQM.axis_stepper.RA.position =
+                    (((EQM.axis_stepper.RA.position + EQM.axis_stepper.RA.direction) % STEPPER_MAX_STEPS) +
+                     STEPPER_MAX_STEPS) % STEPPER_MAX_STEPS;
+        }
+
+        if (!menu_op_value[automatic_mode]) {
+            current_period = stepper_to_target_smoothen_period(&EQM.axis_stepper.RA, 1200);
+            EQM.axis_stepper.RA.timer_config.TIMx->ARR = current_period;
+            EQM.axis_stepper.RA.timer_config.TIMx->CCR1 = current_period / 2;
+        }
+
+    } else if (htim == &htim2) { //M2
+        do_step_increment[Declination] = !do_step_increment[Declination];
+        if (do_step_increment[Declination]) {
+            EQM.axis_stepper.DEC.position =
+                    (((EQM.axis_stepper.DEC.position + EQM.axis_stepper.DEC.direction) % STEPPER_MAX_STEPS) +
+                     STEPPER_MAX_STEPS) % STEPPER_MAX_STEPS;
+
         }
     }
 #endif /** STEP_PIN_AS_GPIO */
@@ -675,11 +671,7 @@ void Error_Handler(void) {
     /* USER CODE BEGIN Error_Handler_Debug */
     /* User can add his own implementation to report the HAL error return state */
     __disable_irq();
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "EndlessLoop"
-    while (1) {
-    }
-#pragma clang diagnostic pop
+    while (1);
     /* USER CODE END Error_Handler_Debug */
 }
 

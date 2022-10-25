@@ -1,7 +1,5 @@
-../Core/Src/adc.c:31:6:MX_ADC1_Init	24	static
-../Core/Src/adc.c:73:6:MX_ADC2_Init	24	static
-../Core/Src/adc.c:115:6:HAL_ADC_MspInit	48	static
-../Core/Src/adc.c:161:6:HAL_ADC_MspDeInit	16	static
-../Core/Src/adc.c:202:10:adc_mean_sampled_read	24	static
-../Core/Src/adc.c:223:10:voltage_read	24	static
-../Core/Src/adc.c:229:8:fine_adjusts_prescaler_value	16	static
+../Core/Src/adc.c:30:6:MX_ADC1_Init	32	static
+../Core/Src/adc.c:72:6:HAL_ADC_MspInit	32	static
+../Core/Src/adc.c:98:6:HAL_ADC_MspDeInit	0	static
+../Core/Src/adc.c:122:10:adc_mean_sampled_read	24	static
+../Core/Src/adc.c:137:8:fine_adjusts_prescaler_value	8	static

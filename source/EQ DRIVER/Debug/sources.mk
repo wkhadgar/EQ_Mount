@@ -23,7 +23,6 @@ C_DEPS :=
 SUBDIRS := \
 Core/Src \
 Core/Startup \
-Drivers/Display/Src \
 Drivers/GNSS/Src \
 Drivers/STM32F1xx_HAL_Driver/Src \
 Drivers/Steppers/Src \
