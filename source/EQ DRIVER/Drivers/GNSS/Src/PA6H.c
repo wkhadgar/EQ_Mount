@@ -48,14 +48,21 @@ bool is_NMEA_str_valid(char *nmea_str) {
 }
 
 bool GNSS_get_data(GNSS_data_t *GNSS_data, char *nmea_str) {
+	char GNSS_VALIDITY;
 
     if (!strncmp(nmea_str, TARGET_NMEA_SENTENCE, 6)) {
-        sscanf(nmea_str, "$GPRMC,%d.%*d,%c", &GNSS_data->nmea_utc, &GNSS_data->valid_data);
+        sscanf(nmea_str, "$GPRMC,%u.%*d,%c", &GNSS_data->nmea_utc, &GNSS_VALIDITY);
 
-        if (GNSS_data->valid_data == 'V') {
-            sscanf(nmea_str, "$GPRMC,%*f,%*c,,,,,%*f,%*f,%d,,,%*c", &GNSS_data->nmea_date);
-        } else if (GNSS_data->valid_data == 'A') {
-            sscanf(nmea_str, "$GPRMC,%*f,%*c,%f,%c,%f,%c,%*f,%*f,%d,,,%*c", &GNSS_data->nmea_latitude,
+        if (GNSS_VALIDITY == 'V') {
+        	GNSS_data->is_valid = INVALID_DATA;
+        } else if (GNSS_VALIDITY == 'A') {
+        	GNSS_data->is_valid = VALID_DATA;
+        }
+
+        if (GNSS_data->is_valid == INVALID_DATA) {
+            sscanf(nmea_str, "$GPRMC,%*f,%*c,,,,,%*f,%*f,%u,,,%*c", &GNSS_data->nmea_date);
+        } else {
+            sscanf(nmea_str, "$GPRMC,%*f,%*c,%f,%c,%f,%c,%*f,%*f,%u,,,%*c", &GNSS_data->nmea_latitude,
                    &GNSS_data->hemisphere, &GNSS_data->nmea_longitude, &GNSS_data->longitude_side,
                    &GNSS_data->nmea_date);
         }
@@ -67,7 +74,7 @@ bool GNSS_get_data(GNSS_data_t *GNSS_data, char *nmea_str) {
 }
 
 bool GNSS_UART_CallBack(GNSS_data_t *GNSS_data) {
-    static bool success = false;
+    bool success = false;
     if (rx_data != '\n' && rx_index < sizeof(rx_buffer)) {
         rx_buffer[rx_index++] = rx_data;
     } else {

@@ -43,9 +43,9 @@ void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 72 - 1;
+  htim2.Init.Prescaler = 360 - 1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 1750 - 1;
+  htim2.Init.Period = 28125 - 1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -96,9 +96,9 @@ void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 72 - 1;
+  htim3.Init.Prescaler = 360 - 1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 1750 - 1;
+  htim3.Init.Period = 28125 -1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_OC_Init(&htim3) != HAL_OK)
@@ -345,5 +345,40 @@ void HAL_TIM_PWM_MspDeInit(TIM_HandleTypeDef* tim_pwmHandle)
 }
 
 /* USER CODE BEGIN 1 */
+
+/**
+ * @note
+ * CLK = 72.000.000 Hz
+ * TIM2 Prescaler = 360
+ * TIM3 Prescaler = 360
+ * TIM4 Prescaler = 360000
+ *
+ * Resolution TIM2 CLK = 200000 Hz (5us) (M2_STEP)
+ * Resolution TIM3 CLK = 200000 Hz (5us) (M1_STEP)
+ * Resolution TIM4 CLK = 2000 Hz (500us) (LED)
+ */
+
+void led_set_slow_blink(void) {
+	TIM4->ARR = (4000 - 1); //Auto Reload Register set to 4000 -> reload every 2 seconds
+	TIM4->CCR3 = (2000 - 1); //Amount of ticks while on, 2000 -> 1 seconds
+}
+
+void led_set_slow_fast_blink(void) {
+	TIM4->ARR = (30000 - 1); //Auto Reload Register set to 30000 -> reload every 15 seconds
+	TIM4->CCR3 = (250 - 1); //Amount of ticks while on, 250 -> 0.125 seconds
+}
+
+void led_set_fast_blink(void) {
+	TIM4->ARR = (1000 - 1); //Auto Reload Register set to 1000 -> reload every 0.5 seconds
+	TIM4->CCR3 = (500 - 1); //Amount of ticks while on, 500 -> 0.25 seconds
+}
+
+void led_start_blink(void) {
+	HAL_TIM_PWM_Start_IT(&htim4, TIM_CHANNEL_3); //Start the output
+}
+
+void led_stop_blink(void) {
+	HAL_TIM_PWM_Stop_IT(&htim4, TIM_CHANNEL_3); //Stop the output
+}
 
 /* USER CODE END 1 */

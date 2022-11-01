@@ -1,4 +1,4 @@
 ../Drivers/GNSS/Src/PA6H.c:11:6:GNSS_init	8	static
 ../Drivers/GNSS/Src/PA6H.c:16:6:is_NMEA_str_valid	24	static
-../Drivers/GNSS/Src/PA6H.c:50:6:GNSS_get_data	32	static
-../Drivers/GNSS/Src/PA6H.c:69:6:GNSS_UART_CallBack	16	static
+../Drivers/GNSS/Src/PA6H.c:50:6:GNSS_get_data	40	static
+../Drivers/GNSS/Src/PA6H.c:76:6:GNSS_UART_CallBack	16	static

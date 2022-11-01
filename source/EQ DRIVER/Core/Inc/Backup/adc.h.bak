@@ -41,7 +41,9 @@ extern ADC_HandleTypeDef hadc1;
 void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-uint16_t voltage_read(uint16_t VREFH_x100);
+
+uint8_t fine_adjusts_prescaler_value(void);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

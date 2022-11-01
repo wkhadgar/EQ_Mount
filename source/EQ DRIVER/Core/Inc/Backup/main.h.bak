@@ -74,8 +74,10 @@ void Error_Handler(void);
 #define M2_ENABLE_GPIO_Port GPIOB
 #define M2_STEP_Pin GPIO_PIN_11
 #define M2_STEP_GPIO_Port GPIOB
-#define SPI1_CS_Pin GPIO_PIN_12
-#define SPI1_CS_GPIO_Port GPIOB
+#define LED_GND_Pin GPIO_PIN_13
+#define LED_GND_GPIO_Port GPIOB
+#define SPI_SCN_Pin GPIO_PIN_14
+#define SPI_SCN_GPIO_Port GPIOB
 #define GPS_TX_Pin GPIO_PIN_9
 #define GPS_TX_GPIO_Port GPIOA
 #define GPS_RX_Pin GPIO_PIN_10
@@ -84,8 +86,8 @@ void Error_Handler(void);
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
 #define SWCLK_GPIO_Port GPIOA
-#define PWM_SLOW_SIG_Pin GPIO_PIN_8
-#define PWM_SLOW_SIG_GPIO_Port GPIOB
+#define LED_PWM_Pin GPIO_PIN_8
+#define LED_PWM_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

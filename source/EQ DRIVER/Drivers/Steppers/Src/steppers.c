@@ -4,96 +4,73 @@
 
 #include "../Inc/steppers.h"
 
-#define WORM_GEAR_ROTATION_PERIOD_uS 900000000
-#define STEPPER_ROTATION_PULSE_PERIOD_uS ((WORM_GEAR_ROTATION_PERIOD_uS) / STEPPER_MAX_STEPS)
-#define MAX_SPEED_PULSE_PERIOD_uS 1875
 
-
-void stepper_disable(stepper_t* s) {
-    s->on_status = 0;
-    HAL_GPIO_WritePin(s->enable_pin.GPIO, s->enable_pin.port, (GPIO_PinState) !s->on_status);
+void stepper_disable(stepper_t* stp) {
+    stp->info.on_status = 0;
+    HAL_GPIO_WritePin(stp->enable_pin.GPIO, stp->enable_pin.port, (GPIO_PinState) !stp->info.on_status);
 }
 
-void stepper_enable(stepper_t* s) {
-    s->on_status = 1;
-    HAL_GPIO_WritePin(s->enable_pin.GPIO, s->enable_pin.port, (GPIO_PinState) !s->on_status);
-    HAL_GPIO_WritePin(s->dir_pin.GPIO, s->dir_pin.port, (GPIO_PinState) s->direction);
+void stepper_enable(stepper_t* stp) {
+    stp->info.on_status = 1;
+    HAL_GPIO_WritePin(stp->enable_pin.GPIO, stp->enable_pin.port, (GPIO_PinState) !stp->info.on_status);
+    HAL_GPIO_WritePin(stp->dir_pin.GPIO, stp->dir_pin.port, (GPIO_PinState) stp->info.direction);
 }
 
-void stepper_init(stepper_t* s) {
-    if (s == NULL) {
+void stepper_init(stepper_t* stp) {
+    if (stp == NULL) {
         return;
     }
 
-    if (!s->is_configured) {
-        s->position = 0;
-        s->direction = 0;
-        stepper_enable(s);
+    if (!stp->info.is_configured) {
+        stp->info.direction = 0;
+        stp->info.position = 0;
+        stp->info.target_position = 0;
+        stp->info.is_configured = true;
 
-        s->auto_step_ticks = (s->axis == Right_Ascension) ? (
-                (STEPPER_ROTATION_PULSE_PERIOD_uS / MAX_SPEED_PULSE_PERIOD_uS)) : 2;
-        s->is_configured = true;
+        stepper_enable(stp);
     }
 }
 
-uint16_t half_step(stepper_t* s) {
-    static bool rise = 0;
-    rise = !rise;
-
-    int8_t inc;
-    if (rise) {
-        HAL_GPIO_WritePin(s->step_pin.GPIO, s->step_pin.port, GPIO_PIN_SET); //pulse rise
-
-        if (s->direction) {
-            inc = 1;
-        } else {
-            inc = -1;
-        }
-        s->position += inc;
-    } else {
-        HAL_GPIO_WritePin(s->step_pin.GPIO, s->step_pin.port, GPIO_PIN_RESET); //pulse fall
-    }
-
-    return s->position;
+void stepper_reverse_direction(stepper_t* stp) {
+    stp->info.direction = !stp->info.direction;
+    HAL_GPIO_WritePin(stp->dir_pin.GPIO, stp->dir_pin.port, (GPIO_PinState) stp->info.direction);
 }
 
-void stepper_reverse_direction(stepper_t* s) {
-    s->direction = !s->direction;
-    HAL_GPIO_WritePin(s->dir_pin.GPIO, s->dir_pin.port, (GPIO_PinState) s->direction);
-}
-
-void stepper_set_direction(stepper_t* s, direction_t dir) {
+void stepper_set_direction(stepper_t* stp, direction_t dir) {
     if (dir == clockwise) {
-        s->direction = clockwise;
-        HAL_GPIO_WritePin(s->dir_pin.GPIO, s->dir_pin.port, GPIO_PIN_SET);
+        stp->info.direction = clockwise;
+        HAL_GPIO_WritePin(stp->dir_pin.GPIO, stp->dir_pin.port, GPIO_PIN_SET);
     } else {
-        s->direction = counter_clockwise;
-        HAL_GPIO_WritePin(s->dir_pin.GPIO, s->dir_pin.port, GPIO_PIN_RESET);
+        stp->info.direction = counter_clockwise;
+        HAL_GPIO_WritePin(stp->dir_pin.GPIO, stp->dir_pin.port, GPIO_PIN_RESET);
     }
 }
 
-uint16_t stepper_to_target_smoothen_period(stepper_t* s, uint16_t target_pos) {
+uint16_t stepper_to_target_smoothen_period_update(stepper_t* stp) {
     static const uint16_t DECELERATION_DELTA_RANGE = 5 * MICRO_STEPPING;
-    static const uint16_t MAX_PERIOD = BASE_PERIOD * 8;
+    static const uint16_t MAX_PERIOD = 1850 * 8;
     static const uint8_t PERIOD_DELTA = 20;
     static int8_t delta_magnitude = -1;
     static uint16_t this_step_period = MAX_PERIOD;
 
-    int target_relative_dist = target_pos - s->position;
+    int target_relative_dist = stp->info.target_position - stp->info.position;
     uint16_t absolute_dist = target_relative_dist >= 0 ? target_relative_dist : -target_relative_dist;
 
-    if (!absolute_dist) return MAX_PERIOD;
+    if (!absolute_dist) {
+    	stp->timer_config.pwm_period = MAX_PERIOD;
+    	return MAX_PERIOD;
+    }
 
     /** direction of move decision */
     {
         if ((target_relative_dist > 0) && ((target_relative_dist / 2) >= (STEPPER_MAX_STEPS / 2))) {
-            stepper_set_direction(s, clockwise);
+            stepper_set_direction(stp, clockwise);
         } else if (target_relative_dist > 0) {
-            stepper_set_direction(s, counter_clockwise);
+            stepper_set_direction(stp, counter_clockwise);
         } else if ((absolute_dist / 2) >= (STEPPER_MAX_STEPS / 2)) {
-            stepper_set_direction(s, counter_clockwise);
+            stepper_set_direction(stp, counter_clockwise);
         } else {
-            stepper_set_direction(s, clockwise);
+            stepper_set_direction(stp, clockwise);
         }
     }
 
@@ -107,9 +84,11 @@ uint16_t stepper_to_target_smoothen_period(stepper_t* s, uint16_t target_pos) {
 
     if (this_step_period > MAX_PERIOD) { //clamping deceleration;
         this_step_period = MAX_PERIOD;
-    } else if (this_step_period < BASE_PERIOD) { //clamping acceleration
-        this_step_period = BASE_PERIOD;
+    } else if (this_step_period < 1850) { //clamping acceleration
+        this_step_period = 1850;
     }
+
+    stp->timer_config.pwm_period = this_step_period;
 
     return this_step_period;
 }

@@ -24,6 +24,7 @@ SUBDIRS := \
 Core/Src \
 Core/Startup \
 Drivers/GNSS/Src \
+Drivers/RF_BLE/Src \
 Drivers/STM32F1xx_HAL_Driver/Src \
 Drivers/Steppers/Src \
 

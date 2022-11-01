@@ -16,6 +16,12 @@
 #define RMC_ONLY_OUTPUT_CMD  "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n"
 #define MINIMUN_DATE         "010122"
 
+
+typedef enum {
+	INVALID_DATA = 0,
+	VALID_DATA,
+} data_validity_t;
+
 typedef struct GNSS_data {
     uint32_t nmea_utc;
     uint32_t nmea_date;
@@ -23,7 +29,7 @@ typedef struct GNSS_data {
     float nmea_longitude;
     char hemisphere;
     char longitude_side;
-    char valid_data;
+    data_validity_t is_valid;
 
 } GNSS_data_t;
 

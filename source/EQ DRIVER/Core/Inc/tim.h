@@ -39,7 +39,7 @@ extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN Private defines */
-#define BASE_PERIOD (1850-1)
+
 /* USER CODE END Private defines */
 
 void MX_TIM2_Init(void);
@@ -49,6 +49,33 @@ void MX_TIM4_Init(void);
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN Prototypes */
+
+/**
+ * @brief Inicia o led em modo de piscadas lentas.
+ */
+void led_set_slow_blink(void);
+
+/**
+ * @brief Inicia o led em modo de uma piscada rápida seguida de um intervalo longo.
+ */
+void led_set_slow_fast_blink(void);
+
+/**
+ * @brief Inicia o led em modo de piscadas rápidas.
+ */
+void led_set_fast_blink(void);
+
+/**
+ * @brief Inicia o blink do led.
+ */
+void led_start_blink(void);
+
+/**
+ * @brief Para o estado atual do led, e o desliga.
+ */
+void led_stop_blink(void);
+
+
 
 /* USER CODE END Prototypes */
 
