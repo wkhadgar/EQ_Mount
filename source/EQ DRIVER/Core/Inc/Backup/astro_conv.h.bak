@@ -58,7 +58,7 @@ reachability_t astro_set_target(astro_target_t target);
 
 GNSS_data_t* astro_get_gnss_pointer(void);
 
-void stepper_position_step(motor_axis_t axis);
+void astro_stepper_position_step(motor_axis_t axis);
 
 void astro_init(void);
 

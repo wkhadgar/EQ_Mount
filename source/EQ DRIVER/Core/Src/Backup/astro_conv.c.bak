@@ -16,6 +16,7 @@ typedef struct {
  * @brief Estrutura da montagem equatorial.
  */
 static struct mount_data {
+
     int16_t fine_adjusts;
     GNSS_data_t GNSS_data;
 
@@ -96,20 +97,51 @@ static struct mount_data {
 										.GPIO = M2_ENABLE_GPIO_Port,
 										.port = M2_ENABLE_Pin,
 								},
-                        },
-                },
-        },
+						},
+				},
+		},
 };
 
 
+static float float_modulus(float num, unsigned int mod) {
+	while (num > mod) {
+		num -= mod;
+	}
+	
+	if (num < 0) {
+		num += mod; /**< Ensure circular modulus */
+	}
+	
+	return num;
+}
+
+static angle_t get_angle_type(angle_t* angle_var, double decimal_degrees) {
+	
+	decimal_degrees = float_modulus(decimal_degrees, 360);
+	
+	angle_var->degrees = (uint16_t) decimal_degrees;
+	angle_var->minutes = (uint8_t)((decimal_degrees - angle_var->degrees) * 60);
+	angle_var->seconds = (uint8_t)(((decimal_degrees - angle_var->degrees) - (angle_var->minutes / 60.0)) * 3600);
+}
+
+static void get_time_type(ptime_t* time_var, double decimal_hours) {
+	
+	decimal_hours = float_modulus(decimal_hours, 24);
+	
+	time_var->hours = (uint8_t) decimal_hours;
+	time_var->minutes = (uint8_t)((decimal_hours - time_var->hours) * 60);
+	time_var->seconds = (uint8_t)(((decimal_hours - time_var->hours) - (time_var->minutes / 60.0)) * 3600);
+}
+
 void astro_update_LMST(void) {
-
-    uint8_t Month;
-    uint8_t Minutes;
-    uint8_t Seconds;
-    uint16_t Year;
-
-    double A;
+	
+	uint8_t Month;
+	uint8_t Minutes;
+	uint8_t Seconds;
+	uint16_t Year;
+	
+	double current_longitude;
+	double A;
     double B;
     double C;
     double E;
@@ -119,8 +151,6 @@ void astro_update_LMST(void) {
     double Day;
     double current_JDN;
     double theta0;
-    double current_longitude;
-    double LMST;
 
     Hours = (self.GNSS_data.nmea_utc / 10000);
     Minutes = ((self.GNSS_data.nmea_utc / 100) - (Hours * 100));
@@ -154,40 +184,28 @@ void astro_update_LMST(void) {
     B = (int16_t)(A / 4);
     C = (int16_t)(2 - A + B);
     E = (int) (365.25 * (Year + 4716));
-    F = (int16_t)(30.6001 * (Month + 1));
-
-    //exact amount of day
-    Day += (Hours / EARTH_ROTATION_HOURS) + (Minutes / EARTH_ROTATION_MINS) + (Seconds / EARTH_ROTATION_SECS);
-
-    current_JDN = C + Day + E + F - 1524.5;
-
-    T = ((current_JDN - 2451545.0) / 36525);
-    theta0 = 280.46061837 + 360.98564736629 * (current_JDN - 2451545.0) + (0.000387933 * T * T) - (T * T * T / 38710000.0);
-
-    theta0 = fmod(theta0, 360);
-    if (theta0 < 0) {
-    	theta0 += 360; /**< Ensure circular modulus */
-    }
-
-    /** Greenwich Mean sideral Time */
-    double GMST = theta0 * EARTH_ROTATION_HOURS; /**< Degrees to RA hours */
-
-    /** Local Mean Sideral Time */
-    LMST = fmod(GMST + ((current_longitude) / 15), EARTH_ROTATION_HOURS);
-    if (LMST < 0) {
-    	LMST += EARTH_ROTATION_HOURS; /**< Ensure circular modulus */
-    }
-
-    self.time_reference.LST_time.hours = (uint8_t) LMST;
-    self.time_reference.LST_time.minutes = (uint8_t) (LMST - self.time_reference.LST_time.hours) * MINUTES_PER_HOUR;
-    self.time_reference.LST_time.seconds = (uint8_t) ((LMST - self.time_reference.LST_time.hours) - (self.time_reference.LST_time.minutes/60.0)) * SECONDS_PER_HOUR;
+	F = (int16_t)(30.6001 * (Month + 1));
+	
+	//exact amount of day
+	Day += (Hours / EARTH_ROTATION_HOURS) + (Minutes / EARTH_ROTATION_MINS) + (Seconds / EARTH_ROTATION_SECS);
+	
+	current_JDN = C + Day + E + F - 1524.5;
+	
+	T = ((current_JDN - 2451545.0) / 36525);
+	theta0 = 280.46061837 + 360.98564736629 * (current_JDN - 2451545.0) + (0.000387933 * T * T) -
+			 (T * T * T / 38710000.0);
+	
+	theta0 += current_longitude; /**< Shift GMST to LMST */
+	
+	/** Local Mean Sideral Time */
+	get_time_type(&self.time_reference.LST_time, (theta0 / 15.0));
 }
 
 void astro_update_fine_adjusts(void) {
 	static uint8_t raw_reading = 0;
-	raw_reading  = fine_adjusts_prescaler_value();
-
-	self.fine_adjusts = raw_reading - 100; //creates scale from -100 to 100
+	raw_reading = fine_adjusts_prescaler_value();
+	
+	self.fine_adjusts = raw_reading - 50; //creates scale from -100 to 100
 }
 
 static reachability_t check_reachability(ptime_t target_RA) {
@@ -223,7 +241,8 @@ reachability_t astro_set_target(astro_target_t target) {
 		self.target_info.reachability = check_reachability(target.position.right_ascension);
 		return self.target_info.reachability;
 	}
-
+	
+	return UNKNOWN_REACH;
 }
 
 GNSS_data_t* astro_get_gnss_pointer(void) {
@@ -233,8 +252,10 @@ GNSS_data_t* astro_get_gnss_pointer(void) {
 void astro_stepper_position_step(motor_axis_t axis) {
 	uint16_t new_pos;
 
+
 	switch (axis) {
 		case Right_Ascension:
+			if (!self.axises.RA.stp.info.is_configured || !self.axises.RA.stp.info.on_status) return;
 			new_pos = (self.axises.RA.stp.info.position + self.axises.RA.stp.info.direction) % STEPPER_MAX_STEPS;
 			if (new_pos < 0) {
 				new_pos += STEPPER_MAX_STEPS;
@@ -243,6 +264,7 @@ void astro_stepper_position_step(motor_axis_t axis) {
 			self.axises.RA.stp.info.position = new_pos;
 			break;
 		case Declination:
+			if (!self.axises.DEC.stp.info.is_configured || !self.axises.DEC.stp.info.on_status) return;
 			new_pos = (self.axises.DEC.stp.info.position + self.axises.DEC.stp.info.direction) % STEPPER_MAX_STEPS;
 			if (new_pos < 0) {
 				new_pos += STEPPER_MAX_STEPS;
@@ -256,20 +278,36 @@ void astro_stepper_position_step(motor_axis_t axis) {
 }
 
 void astro_init(void) {
-    stepper_init(&self.axises.RA.stp);
-    stepper_init(&self.axises.DEC.stp);
-
-    self.axises.RA.stp.timer_config.pwm_period = TRACKING_SPEED_PULSE_PERIOD_duS;
+	stepper_init(&self.axises.RA.stp);
+	stepper_init(&self.axises.DEC.stp);
+	
+	self.axises.RA.stp.timer_config.pwm_period = TRACKING_SPEED_PULSE_PERIOD_duS;
 }
 
 void astro_start_tracking(void) {
+	
+	HAL_TIM_PWM_Start_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
+	self.axises.RA.stp.timer_config.TIM->ARR = self.axises.RA.stp.timer_config.pwm_period * 2; /**< 10us per unit */
+	self.axises.RA.stp.timer_config.TIM->CCR1 = self.axises.RA.stp.timer_config.pwm_period; /**< 5us per unit = 50% duty */
+}
 
-    HAL_TIM_PWM_Start_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
-    self.axises.RA.stp.timer_config.TIM->ARR = self.axises.RA.stp.timer_config.pwm_period * 2;
-    self.axises.RA.stp.timer_config.TIM->CCR1 = self.axises.RA.stp.timer_config.pwm_period;
+void astro_axis_add_fine_adjusts(motor_axis_t axis) {
+	
+	astro_update_fine_adjusts();
+	
+	switch (axis) {
+		case Right_Ascension:
+			self.axises.RA.stp.timer_config.pwm_period += self.fine_adjusts;
+			break;
+		case Declination:
+			self.axises.DEC.stp.timer_config.pwm_period += self.fine_adjusts;
+			break;
+		default:
+			break;
+	}
 }
 
 void astro_full_stop(void) {
 	HAL_TIM_PWM_Stop_IT(self.axises.DEC.stp.timer_config.htim, self.axises.DEC.stp.timer_config.TIM_CHANNEL);
-    HAL_TIM_PWM_Stop_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
+	HAL_TIM_PWM_Stop_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
 }

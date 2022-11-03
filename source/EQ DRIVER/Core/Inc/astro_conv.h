@@ -31,13 +31,11 @@ typedef enum {
 typedef struct {
 	uint8_t hours;
   	uint8_t minutes;
-   	uint8_t seconds;
 } ptime_t;
 
 typedef struct {
 	uint16_t degrees;
-	uint8_t minutes;
-	uint8_t seconds;
+	uint8_t arc_minutes;
 } angle_t;
 
 typedef struct astro_pos {

@@ -10,6 +10,7 @@
 
 #define MICRO_STEPPING 16
 #define STEPPER_MAX_STEPS (200 * MICRO_STEPPING)
+#define WORM_RATIO 96
 
 typedef enum motor_axis {
     Right_Ascension,
@@ -23,13 +24,13 @@ typedef enum dir_t {
 } direction_t;
 
 typedef struct stepper_motor {
-    struct {
-    	uint16_t position; /** < in relation to the full 200 * MICRO_STEPPING steps */
-    	uint16_t target_position;
-    	direction_t direction; /** < whether rotation happens clockwise or not */
-    	bool on_status; /** < is the motor being driven right now? */
-    	bool is_configured;
-    } info;
+	struct {
+		uint32_t position; /** < in relation to the full WORM_RATIO * STEPPER_MAX_STEPS steps */
+		uint32_t target_position;
+		direction_t direction; /** < whether rotation happens clockwise or not */
+		bool on_status; /** < is the motor being driven right now? */
+		bool is_configured;
+	} info;
 
     struct timer_config {
         const uint32_t TIM_CHANNEL;
@@ -82,6 +83,6 @@ void stepper_set_direction(stepper_t* stp, direction_t dir);
  *
  * @param stp [out] Address of stepper motor to be configured.
  */
-uint16_t stepper_to_target_smoothen_period_update(stepper_t* stp);
+uint16_t stepper_to_target_smoothen_period_update(int32_t target_relative_dist);
 
 #endif //EQMOUNT_CUSTOM_CONTROLLER_STEPPERS_H

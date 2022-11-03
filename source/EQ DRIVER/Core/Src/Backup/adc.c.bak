@@ -120,23 +120,23 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 /* USER CODE BEGIN 1 */
 
 static uint32_t adc_mean_sampled_read(struct __ADC_HandleTypeDef *hadc, uint16_t mapping) {
-    uint32_t v = 0;
-    HAL_ADC_Start(hadc);
-    HAL_ADC_PollForConversion(hadc, 100);
-    for (uint8_t samples = 0; samples < 64; samples++) {
-        v += HAL_ADC_GetValue(hadc);
-    }
-    HAL_ADC_Stop(hadc);
-
-    v >>= 6; // v / 64
-    v = (v * mapping) / 4095; //correlates analog read to max mapping value
-
-    return v;
+	uint32_t v = 0;
+	HAL_ADC_Start(hadc);
+	HAL_ADC_PollForConversion(hadc, 100);
+	for (uint8_t samples = 0; samples < 64; samples++) {
+		v += HAL_ADC_GetValue(hadc);
+	}
+	HAL_ADC_Stop(hadc);
+	
+	v >>= 6; // v / 64
+	v = (v * mapping) / 4025; //correlates analog read to max mapping value
+	
+	return v;
 }
 
 uint8_t fine_adjusts_prescaler_value(void) {
-    uint8_t adjust = adc_mean_sampled_read(&hadc1, 200); //correlates analog read to new scale
-
-    return adjust;
+	uint8_t adjust = adc_mean_sampled_read(&hadc1, 100); //correlates analog read to new scale
+	
+	return adjust;
 }
 /* USER CODE END 1 */

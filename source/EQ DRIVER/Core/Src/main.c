@@ -165,7 +165,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    	astro_update_fine_adjusts();
+    	astro_update_raw_fine_adjusts();
 
     }
   /* USER CODE END 3 */
