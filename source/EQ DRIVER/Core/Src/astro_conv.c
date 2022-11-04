@@ -21,6 +21,7 @@ typedef struct {
 static struct mount_data {
 	
 	int8_t raw_fine_adjusts;
+	bool is_on_goto;
 	GNSS_data_t GNSS_data;
 
     struct {
@@ -51,8 +52,8 @@ static struct mount_data {
 						.axis = Right_Ascension,
 						.stp = {
 								.info = {
-									.position = 0,
-									.target_position = 0,
+									.position = STEPPER_MAX_STEPS * (WORM_GEAR/2), /**< setting 0 as the unreachable lowest orientation */
+									.target_position = STEPPER_MAX_STEPS * (WORM_GEAR/2), /**< setting 0 as the unreachable lowest orientation */
 									.on_status = false,
 									.is_configured = false,
 							},
@@ -210,6 +211,24 @@ void astro_update_raw_fine_adjusts(void) {
 	self.raw_fine_adjusts = raw_reading - 50; //creates scale from -50 to 50
 }
 
+static void astro_set_home(void) {
+
+
+	if (self.GNSS_data.is_valid == VALID_DATA) {
+		self.target_info.reachability = REACHABLE;
+
+		self.target_info.current_target.name = "Home - at LST";
+
+		self.target_info.current_target.position.declination.degrees = 0;
+		self.target_info.current_target.position.declination.arc_minutes = 0;
+
+		self.target_info.current_target.position.right_ascension.hours = 0;
+		self.target_info.current_target.position.right_ascension.minutes = 0;
+
+
+	}
+}
+
 static reachability_t check_reachability(ptime_t target_RA) {
 	
 	bool is_set;
@@ -296,6 +315,11 @@ void astro_start_tracking(void) {
     self.axises.RA.stp.timer_config.TIM->CCR1 = self.axises.RA.stp.timer_config.pwm_period; /**< 5us per unit = 50% duty */
 }
 
+void astro_start_moving(void) {
+
+    HAL_TIM_PWM_Start_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
+}
+
 void astro_axis_add_fine_adjusts(void) {
 	
 	astro_update_raw_fine_adjusts();
@@ -307,4 +331,28 @@ void astro_full_stop(void) {
 	
 	HAL_TIM_PWM_Stop_IT(self.axises.DEC.stp.timer_config.htim, self.axises.DEC.stp.timer_config.TIM_CHANNEL);
     HAL_TIM_PWM_Stop_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
+}
+
+void astro_goto_target(void) {
+	uint32_t target_abs_position;
+	uint32_t target_rel_distance;
+
+	if (self.target_info.reachability == REACHABLE) {
+		self.is_on_goto = true;
+
+		target_abs_position = self.target_info.current_target.position.right_ascension.hours * (4 * STEPPER_MAX_STEPS);
+		target_abs_position += self.target_info.current_target.position.right_ascension.minutes * (STEPPER_MAX_STEPS / 15);
+
+		stepper_set_target(&self.axises.RA.stp, target_abs_position);
+		target_rel_distance = get_relative_dist(self.axises.RA.stp);
+
+		astro_start_moving();
+
+		//stepper_to_target_smoothen_period_update(target_rel_distance); //must be called from timer isr, updating TIM->ARR
+	}
+}
+
+void astro_go_home(void) {
+	astro_set_home();
+
 }
