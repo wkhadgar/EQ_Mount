@@ -1,6 +1,0 @@
-../Drivers/Steppers/Src/steppers.c:8:6:stepper_disable	0	static
-../Drivers/Steppers/Src/steppers.c:13:6:stepper_enable	8	static
-../Drivers/Steppers/Src/steppers.c:19:6:stepper_init	0	static
-../Drivers/Steppers/Src/steppers.c:34:6:stepper_reverse_direction	0	static
-../Drivers/Steppers/Src/steppers.c:39:6:stepper_set_direction	0	static
-../Drivers/Steppers/Src/steppers.c:53:10:stepper_to_target_smoothen_period_update	0	static
