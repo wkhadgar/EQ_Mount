@@ -1,5 +1,5 @@
 //
-// Created by paulo on 22/09/2022. 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
+// Created by paulo on 22/09/2022
 //
 
 #include "astro_conv.h"
