@@ -46,15 +46,7 @@ void stepper_set_direction(stepper_t* stp, direction_t dir) {
 	}
 }
 
-static int32_t get_relative_dist(stepper_t* stp) {
-	return (stp->info.target_position - stp->info.position);
-}
-
-void stepper_set_target(stepper_t* stp, uint32_t absolute_pos) {
-	stp->info.target_position = absolute_pos;
-}
-
-uint16_t stepper_to_target_smoothen_period_update(int32_t target_relative_dist) {
+inline uint16_t stepper_to_target_smoothen_period_update(int32_t target_relative_dist) {
 	static const uint16_t DECELERATION_DELTA_RANGE = 5 * MICRO_STEPPING;
 	static const uint16_t MAX_PERIOD = 1850 * 8;
 	static const uint8_t PERIOD_DELTA = 20;
@@ -64,6 +56,7 @@ uint16_t stepper_to_target_smoothen_period_update(int32_t target_relative_dist) 
 	uint32_t absolute_dist = target_relative_dist >= 0 ? target_relative_dist : -target_relative_dist;
 	
 	if (!absolute_dist) {
+		
 		return MAX_PERIOD;
     }
 

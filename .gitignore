@@ -31,7 +31,11 @@
 *.out
 *.app
 
-.vscode/
-cmake-build-debug/
-.idea/
+*.launch
 *.code-workspace
+
+cmake-build-debug/
+Debug/
+.vscode/
+.idea/
+.settings/
