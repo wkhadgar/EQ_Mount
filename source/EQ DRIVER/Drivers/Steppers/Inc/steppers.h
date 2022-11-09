@@ -34,8 +34,8 @@ typedef struct stepper_motor {
 
     struct timer_config {
         const uint32_t TIM_CHANNEL;
-        TIM_HandleTypeDef* htim;
-        TIM_TypeDef* TIM;
+		const TIM_HandleTypeDef* htim;
+		TIM_TypeDef* TIM;
         uint16_t pwm_period; /** < in deca-micro_seconds, 0 if invalid */
     } timer_config;
 

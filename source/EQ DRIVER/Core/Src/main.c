@@ -60,29 +60,29 @@
  * @brief menu options enum
  */
 enum menu_options {
-    DEC_ = 0,
-    RA,
-    hemisphere,
-    automatic_mode,
-    manual_mode,
-    brilho_tela,
-    tempo_tela,
-    save_configs,
-    MENU_SIZE, //must be the last value
+	DEC_ = 0,
+	RA,
+	hemisphere,
+	automatic_mode,
+	manual_mode,
+	brilho_tela,
+	tempo_tela,
+	save_configs,
+	MENU_SIZE, //must be the last value
 };
 
 /**
  * @brief Strings to the menu
  */
 const char* menu_str[MENU_SIZE] = {
-        [DEC_]           = "DEC",
-        [RA]             = "R.A",
-        [hemisphere]     = "Hemisferio",
-        [automatic_mode] = "Modo automatico",
-        [manual_mode]    = "Modo manual",
-        [brilho_tela]    = "Contraste",
-        [tempo_tela]     = "Luz da tela",
-        [save_configs]   = "Salvar configs",
+		[DEC_]           = "DEC",
+		[RA]             = "R.A",
+		[hemisphere]     = "Hemisferio",
+		[automatic_mode] = "Modo automatico",
+		[manual_mode]    = "Modo manual",
+		[brilho_tela]    = "Contraste",
+		[tempo_tela]     = "Luz da tela",
+		[save_configs]   = "Salvar configs",
 };
 
 uint16_t menu_op_value[MENU_SIZE] = {0};
@@ -101,11 +101,11 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
-    if (huart == &huart1) {
-        if (GNSS_UART_CallBack(astro_get_gnss_pointer())) {
-            astro_update_LMST();
-        }
-    }
+	if (huart == &huart1) {
+		if (GNSS_UART_CallBack(astro_get_gnss_pointer())) {
+			astro_update_LMST();
+		}
+	}
 }
 
 /* USER CODE END 0 */
@@ -114,107 +114,104 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_TIM2_Init();
-  MX_ADC1_Init();
-  MX_TIM3_Init();
-  MX_USART1_UART_Init();
-  MX_SPI1_Init();
-  MX_TIM4_Init();
-  /* USER CODE BEGIN 2 */
-
-    HAL_Delay(500);
-    GNSS_init();
-
-    last_move_ticks = TICKS_NOW; /** < start time reference */
-
-    astro_init();
-
-    led_start_blink();
-    led_set_slow_fast_blink();
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-    while (1) {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-
-    	astro_update_raw_fine_adjusts();
-
-    }
-  /* USER CODE END 3 */
+int main(void) {
+	/* USER CODE BEGIN 1 */
+	
+	/* USER CODE END 1 */
+	
+	/* MCU Configuration--------------------------------------------------------*/
+	
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
+	
+	/* USER CODE BEGIN Init */
+	
+	/* USER CODE END Init */
+	
+	/* Configure the system clock */
+	SystemClock_Config();
+	
+	/* USER CODE BEGIN SysInit */
+	
+	/* USER CODE END SysInit */
+	
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_TIM2_Init();
+	MX_ADC1_Init();
+	MX_TIM3_Init();
+	MX_USART1_UART_Init();
+	MX_SPI1_Init();
+	MX_TIM4_Init();
+	/* USER CODE BEGIN 2 */
+	
+	HAL_Delay(500);
+	GNSS_init();
+	
+	last_move_ticks = TICKS_NOW; /** < start time reference */
+	
+	astro_init();
+	
+	led_start_blink();
+	led_set_slow_fast_blink();
+	
+	/* USER CODE END 2 */
+	
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
+	while (1) {
+		/* USER CODE END WHILE */
+		
+		/* USER CODE BEGIN 3 */
+		
+		astro_update_raw_fine_adjusts();
+		
+		astro_go_home();
+		
+	}
+	/* USER CODE END 3 */
 }
 
 /**
   * @brief System Clock Configuration
   * @retval None
   */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
+void SystemClock_Config(void) {
+	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+	RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+	
+	/** Initializes the RCC Oscillators according to the specified parameters
+	* in the RCC_OscInitTypeDef structure.
+	*/
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+	RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		Error_Handler();
+	}
+	
+	/** Initializes the CPU, AHB and APB buses clocks
+	*/
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+								  | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+	
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
+		Error_Handler();
+	}
+	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+	PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+		Error_Handler();
+	}
 }
 
 /* USER CODE BEGIN 4 */
@@ -229,39 +226,36 @@ void SystemClock_Config(void)
   * @param  htim : TIM handle
   * @retval None
   */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM1) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-
-	else if (htim == &htim3) { //M1
-		astro_stepper_position_step(Right_Ascension);
-
-		if (!menu_op_value[automatic_mode] && menu_op_value[manual_mode]) {
-        }
-
-	} else if (htim == &htim2) { //M2
-		astro_stepper_position_step(Declination);
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
+	/* USER CODE BEGIN Callback 0 */
+	uint16_t new_period;
+	/* USER CODE END Callback 0 */
+	if (htim->Instance == TIM1) {
+		HAL_IncTick();
 	}
-  /* USER CODE END Callback 1 */
+		/* USER CODE BEGIN Callback 1 */
+	else if (htim->Instance == TIM3) { //M1
+		astro_stepper_position_step(Right_Ascension, GOING_TO);
+		
+		if (!menu_op_value[automatic_mode] && menu_op_value[manual_mode]) {
+		}
+		
+	} else if (htim->Instance == TIM2) { //M2
+		astro_stepper_position_step(Declination, GOING_TO);
+	}
+	/* USER CODE END Callback 1 */
 }
 
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
-    __disable_irq();
-    while (1);
-  /* USER CODE END Error_Handler_Debug */
+void Error_Handler(void) {
+	/* USER CODE BEGIN Error_Handler_Debug */
+	/* User can add his own implementation to report the HAL error return state */
+	__disable_irq();
+	while (1);
+	/* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
@@ -276,8 +270,8 @@ void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line
-     number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,
-     line) */
+	 number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,
+	 line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

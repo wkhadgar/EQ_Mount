@@ -27,8 +27,8 @@ static struct mount_data {
 	
 	struct {
 		int16_t RA_fine_period_adjust;
-		ptime_t LST_time;
-		ptime_t civilian_time;
+		time__t LST_time;
+		time__t civilian_time;
 		astro_pos_t orientation;
 		bool is_initialized;
 	} time_reference;
@@ -162,79 +162,80 @@ static void get_as_angle_type(angle_t* angle_var, double decimal_degrees) {
 	angle_var->arc_minutes = (uint8_t) ((decimal_degrees - angle_var->degrees) * 60);
 }
 
-static void get_as_ptime_type(ptime_t* time_var, double decimal_hours) {
+static void get_as_ptime_type(time__t* time_var, double decimal_hours) {
 	
 	decimal_hours = cyclic_float_modulus(decimal_hours, 24);
 	
 	time_var->decimal_hours = decimal_hours;
 	time_var->hours = (uint8_t) decimal_hours;
-	time_var->minutes = (uint8_t) ((decimal_hours - time_var->hours) * 60);
+	time_var->minutes = (uint8_t)((decimal_hours - time_var->hours) * 60);
 }
 
-/** LST calculation variables */
-uint16_t Year;
-uint8_t Month;
-uint8_t Seconds;
-uint8_t Minutes;
-double Day;
-double Hours;
-double current_longitude;
-double A;
-double B;
-double C;
-double E;
-double F;
 
 void astro_update_LMST(void) {
-	
+
+/** LST calculation variables */
+	uint16_t Year;
+	uint8_t Month;
+	uint8_t Seconds;
+	uint8_t Minutes;
+	double Day;
+	double Hours;
+	double current_longitude;
+	double A;
+	double B;
+	double C;
+	double E;
+	double F;
 	double current_JDN;
+	double GMST_raw;
 	double T;
-	double theta0;
+	double J0;
+	double D0;
+	double H;
 	
 	if (self.GNSS_data.is_valid == VALID_DATA) {
 		
 		Seconds = self.GNSS_data.nmea_utc % 100;
-		if (Seconds == 0 || !self.time_reference.is_initialized) {  // updates every minute
-			Hours = (uint8_t) (self.GNSS_data.nmea_utc / 10000);
-			Minutes = (uint8_t) ((self.GNSS_data.nmea_utc / 100) - (Hours * 100));
-			
-			if (Hours == 0 || !self.time_reference.is_initialized) { // updates every hour
-				Day = (uint8_t) (self.GNSS_data.nmea_date / 10000);
-				Month = (uint8_t) ((self.GNSS_data.nmea_date / 100) - (Day * 100));
-				if (Month < 3) { /** julian calendar correction */
-					Month += 12;
-					Year -= 1;
-				}
-				
-				Year = (((uint16_t) (self.GNSS_data.nmea_date)) % 100) + 2000;
-				A = (int16_t) (Year / 100);
-				B = (int16_t) (A / 4);
-				C = (int16_t) (2 - A + B);
-				E = (int) (365.25 * (Year + 4716));
-				F = (int16_t) (30.6001 * (Month + 1));
-			}
-			
-			get_as_ptime_type(&self.time_reference.civilian_time, (Hours + (Minutes / 60.0)) + UTC_OFFSET);
+		
+		Hours = (uint8_t)(self.GNSS_data.nmea_utc / 10000);
+		Minutes = (uint8_t)((self.GNSS_data.nmea_utc / 100) - (Hours * 100));
+		Day = (uint8_t)(self.GNSS_data.nmea_date / 10000);
+		Month = (uint8_t)((self.GNSS_data.nmea_date / 100) - (Day * 100));
+		Year = (self.GNSS_data.nmea_date % 100) + 2000;
+		if (Month < 3) { /** julian calendar correction */
+			Month += 12;
+			Year -= 1;
 		}
+		
+		A = (int16_t)(Year / 100);
+		B = (int16_t)(A / 4);
+		C = (int16_t)(2 - A + B);
+		E = (int) (365.25 * (Year + 4716));
+		F = (int16_t)(30.6001 * (Month + 1));
+		
+		get_as_ptime_type(&self.time_reference.civilian_time, (Hours + (Minutes / 60.0)) + UTC_OFFSET);
 		
 		/** longitude filtering in degrees */
-		if (!self.time_reference.is_initialized) { //updates once
-			current_longitude = (uint8_t) (self.GNSS_data.nmea_longitude / 100);
-			current_longitude += (self.GNSS_data.nmea_longitude - current_longitude * 100) / 60.0;
-			current_longitude *= (self.GNSS_data.longitude_side == 'W' ? -1.0 : 1.0); /**< signed longitude value */
-		}
+		current_longitude = (uint8_t)(self.GNSS_data.nmea_longitude / 100);
+		current_longitude += (self.GNSS_data.nmea_longitude - current_longitude * 100) / 60.0;
+		current_longitude *= (self.GNSS_data.longitude_side == 'W' ? -1.0 : 1.0); /**< signed longitude value */
 		
+		/** Decimal Day */
 		Day += (Hours / EARTH_ROTATION_HOURS) + (Minutes / EARTH_ROTATION_MINS) + (Seconds / EARTH_ROTATION_SECS);
 		
 		current_JDN = C + Day + E + F - 1524.5;  /**< Julian Day right now */
-		T = ((current_JDN - 2451545.0) / 36525);
-		theta0 = 280.46061837 + (360.98564736629 * (current_JDN - 2451545.0)) + (0.000387933 * T * T) -
-				 (T * T * T / 38710000.0); /**< GMST in degrees */
+		J0 = (((uint32_t)
+		current_JDN) +0.5); /**< Julian midnight */
+		H = (current_JDN - J0) * EARTH_ROTATION_HOURS; /**< Hours since midnight */
+		D0 = (J0 - 2451545.0); /**< Whole days since epoch */
+		T = ((current_JDN - 2451545.0) / 36525.0); /** Centuries since epoch */
 		
-		theta0 += current_longitude; /**< Shifting GMST to LMST */
+		/** Greenwich Mean Sideral Time */
+		GMST_raw = 6.697374558 + (0.06570982441908 * D0) + (1.00273790935 * H) + (0.000026 * (T * T));
 		
 		/** Local Mean Sideral Time */
-		get_as_ptime_type(&self.time_reference.LST_time, (theta0 / 15.0));
+		get_as_ptime_type(&self.time_reference.LST_time, (GMST_raw + (current_longitude / 15.0)));
 		
 		self.time_reference.is_initialized = true; /** save future computation time */
 	}
@@ -276,7 +277,7 @@ static void astro_set_home(void) {
 }
 
 
-static reachability_t check_reachability(ptime_t target_RA) {
+static reachability_t check_reachability(time__t target_RA) {
 	
 	bool is_set;
 	bool is_risen;
@@ -297,6 +298,22 @@ static reachability_t check_reachability(ptime_t target_RA) {
 	} else {
 		return REACHABLE;
 	}
+}
+
+static uint16_t moving_to_target_smoothen_period_update(stepper_t* stp) {
+	
+	return stepper_to_target_smoothen_period_update(
+			(int32_t)
+	stp->info.position - (int32_t)
+	stp->info.target_position);
+}
+
+static void update_stp_period(stepper_t* stp, movement_t movement) {
+	stp->timer_config.pwm_period = (movement == GOING_TO) ? moving_to_target_smoothen_period_update(stp)
+														  : TRACKING_SPEED_PULSE_PERIOD_duS;
+	
+	stp->timer_config.TIM->ARR = self.axises.RA.stp.timer_config.pwm_period * 2;
+	stp->timer_config.TIM->CCR1 = self.axises.RA.stp.timer_config.pwm_period;
 }
 
 void astro_update_target(astro_target_t target) {
@@ -330,26 +347,25 @@ GNSS_data_t* astro_get_gnss_pointer(void) {
 	return &self.GNSS_data;
 }
 
-
-void astro_start_tracking(void) {
-	
-	stepper_set_direction(&self.axises.RA.stp, clockwise);
-	
-	HAL_TIM_PWM_Start_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
-	self.axises.RA.stp.timer_config.TIM->ARR = self.axises.RA.stp.timer_config.pwm_period * 2; /**< 10us per unit */
-	self.axises.RA.stp.timer_config.TIM->CCR1 = self.axises.RA.stp.timer_config.pwm_period; /**< 5us per unit = 50% duty */
-}
-
 static void astro_start_moving(void) {
 	
 	HAL_TIM_PWM_Start_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
+}
+
+void astro_start_tracking(movement_t movement) {
+	
+	stepper_set_direction(&self.axises.RA.stp, clockwise);
+	
+	astro_start_moving();
+	
+	update_stp_period(&self.axises.RA.stp, movement);
 }
 
 void astro_axis_add_fine_adjusts(void) {
 	
 	astro_update_raw_fine_adjusts();
 	
-	self.time_reference.RA_fine_period_adjust = (int16_t) (self.raw_fine_adjusts * STEPPER_PERIOD_FINE_ADJUST_SCALER);
+	self.time_reference.RA_fine_period_adjust = (int16_t)(self.raw_fine_adjusts * STEPPER_PERIOD_FINE_ADJUST_SCALER);
 }
 
 
@@ -378,7 +394,8 @@ void astro_full_stop(void) {
 	HAL_TIM_PWM_Stop_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
 }
 
-void astro_stepper_position_step(motor_axis_t axis) {
+
+void astro_stepper_position_step(motor_axis_t axis, movement_t movement) {
 	
 	uint16_t new_pos;
 	
@@ -387,26 +404,24 @@ void astro_stepper_position_step(motor_axis_t axis) {
 			if (!self.axises.RA.stp.info.is_configured || !self.axises.RA.stp.info.on_status) {
 				return;
 			}
-			new_pos = cyclic_modulus(((int32_t) (self.axises.RA.stp.info.position)) + self.axises.RA.stp.info.direction,
+			new_pos = cyclic_modulus(((int32_t)(self.axises.RA.stp.info.position)) + self.axises.RA.stp.info.direction,
 									 STEPPER_MAX_STEPS);
 			self.axises.RA.stp.info.position = new_pos;
+			
+			update_stp_period(&self.axises.RA.stp, movement);
 			break;
 		case Declination:
 			if (!self.axises.DEC.stp.info.is_configured || !self.axises.DEC.stp.info.on_status) {
 				return;
 			}
 			new_pos = cyclic_modulus(
-					((int32_t) (self.axises.DEC.stp.info.position)) + self.axises.DEC.stp.info.direction,
+					((int32_t)(self.axises.DEC.stp.info.position)) + self.axises.DEC.stp.info.direction,
 					STEPPER_MAX_STEPS);
 			self.axises.DEC.stp.info.position = new_pos;
+			
+			update_stp_period(&self.axises.DEC.stp, movement);
 			break;
 		default:
 			break;
 	}
-}
-
-uint16_t moving_to_target_smoothen_period(void) {
-	
-	return stepper_to_target_smoothen_period_update(
-			(int32_t) self.axises.RA.stp.info.position - (int32_t) self.axises.RA.stp.info.target_position);
 }
