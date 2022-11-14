@@ -36,6 +36,7 @@ static struct mount_data {
 	struct {
 		astro_target_t current_target;
 		reachability_t reachability;
+		movement_t current_movement;
 	} target_info;
 	
 	struct {
@@ -114,14 +115,6 @@ static struct mount_data {
 		},
 };
 
-void astro_init(void) {
-	
-	stepper_init(&self.axises.RA.stp);
-	stepper_init(&self.axises.DEC.stp);
-	
-	self.axises.RA.stp.timer_config.pwm_period = TRACKING_SPEED_PULSE_PERIOD_duS;
-}
-
 static inline double signed_cyclic_distance(double origin, double target, uint32_t cycle_size) {
 	double cw_d = origin > target ? (origin - target) : (target - origin);
 	double ccw_d = cycle_size - cw_d;
@@ -159,7 +152,10 @@ static void get_as_angle_type(angle_t* angle_var, double decimal_degrees) {
 	
 	angle_var->decimal_degrees = decimal_degrees;
 	angle_var->degrees = (uint16_t) decimal_degrees;
-	angle_var->arc_minutes = (uint8_t) ((decimal_degrees - angle_var->degrees) * 60);
+	angle_var->arc_minutes = (uint8_t)((decimal_degrees - angle_var->degrees) * 60);
+	angle_var->arc_seconds = (uint8_t)(((double) decimal_degrees - angle_var->degrees) -
+									   ((double) angle_var->arc_minutes / MINUTES_PER_HOUR)) *
+							 SECONDS_PER_HOUR;
 }
 
 static void get_as_ptime_type(time__t* time_var, double decimal_hours) {
@@ -169,8 +165,27 @@ static void get_as_ptime_type(time__t* time_var, double decimal_hours) {
 	time_var->decimal_hours = decimal_hours;
 	time_var->hours = (uint8_t) decimal_hours;
 	time_var->minutes = (uint8_t)((decimal_hours - time_var->hours) * 60);
+	time_var->seconds = (uint8_t)(((double) decimal_hours - time_var->hours)
+								  - ((double) time_var->minutes / MINUTES_PER_HOUR)) *
+						SECONDS_PER_HOUR;
 }
 
+void astro_init(void) {
+	
+	stepper_init(&self.axises.RA.stp);
+	stepper_init(&self.axises.DEC.stp);
+	
+	self.axises.RA.stp.timer_config.pwm_period = TRACKING_SPEED_PULSE_PERIOD_duS;
+}
+
+void astro_update_raw_fine_adjusts(void) {
+	
+	uint8_t raw_reading;
+	
+	raw_reading = fine_adjusts_prescaler_value();
+	
+	self.raw_fine_adjusts = (int8_t)(raw_reading - 50); //creates scale from -50 to 50
+}
 
 void astro_update_LMST(void) {
 
@@ -214,7 +229,8 @@ void astro_update_LMST(void) {
 		E = (int) (365.25 * (Year + 4716));
 		F = (int16_t)(30.6001 * (Month + 1));
 		
-		get_as_ptime_type(&self.time_reference.civilian_time, (Hours + (Minutes / 60.0)) + UTC_OFFSET);
+		get_as_ptime_type(&self.time_reference.civilian_time,
+						  (Hours + ((double) Minutes / 60) + ((double) Seconds / 3600)) + UTC_OFFSET);
 		
 		/** longitude filtering in degrees */
 		current_longitude = (uint8_t)(self.GNSS_data.nmea_longitude / 100);
@@ -249,14 +265,6 @@ bool astro_is_at_target(void) {
 	return false;
 }
 
-void astro_update_raw_fine_adjusts(void) {
-	
-	uint8_t raw_reading;
-	
-	raw_reading = fine_adjusts_prescaler_value();
-	
-	self.raw_fine_adjusts = (int8_t) (raw_reading - 50); //creates scale from -50 to 50
-}
 
 static void astro_set_home(void) {
 	
@@ -302,15 +310,15 @@ static reachability_t check_reachability(time__t target_RA) {
 
 static uint16_t moving_to_target_smoothen_period_update(stepper_t* stp) {
 	
-	return stepper_to_target_smoothen_period_update(
-			(int32_t)
+	return stepper_to_target_smoothen_period_update((int32_t)
 	stp->info.position - (int32_t)
 	stp->info.target_position);
 }
 
-static void update_stp_period(stepper_t* stp, movement_t movement) {
-	stp->timer_config.pwm_period = (movement == GOING_TO) ? moving_to_target_smoothen_period_update(stp)
-														  : TRACKING_SPEED_PULSE_PERIOD_duS;
+static void update_stp_period(stepper_t* stp) {
+	stp->timer_config.pwm_period = (self.target_info.current_movement == GOING_TO)
+								   ? moving_to_target_smoothen_period_update(stp)
+								   : TRACKING_SPEED_PULSE_PERIOD_duS;
 	
 	stp->timer_config.TIM->ARR = self.axises.RA.stp.timer_config.pwm_period * 2;
 	stp->timer_config.TIM->CCR1 = self.axises.RA.stp.timer_config.pwm_period;
@@ -352,13 +360,28 @@ static void astro_start_moving(void) {
 	HAL_TIM_PWM_Start_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
 }
 
-void astro_start_tracking(movement_t movement) {
+void astro_full_stop(void) {
+	
+	HAL_TIM_PWM_Stop_IT(self.axises.DEC.stp.timer_config.htim, self.axises.DEC.stp.timer_config.TIM_CHANNEL);
+	HAL_TIM_PWM_Stop_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
+}
+
+void astro_release(void) {
+	stepper_disable(&self.axises.RA.stp);
+	stepper_disable(&self.axises.DEC.stp);
+}
+
+void astro_engage(void) {
+	stepper_enable(&self.axises.RA.stp);
+	stepper_enable(&self.axises.DEC.stp);
+}
+
+void astro_start_tracking(void) {
 	
 	stepper_set_direction(&self.axises.RA.stp, clockwise);
 	
+	self.target_info.current_movement = TRACKING;
 	astro_start_moving();
-	
-	update_stp_period(&self.axises.RA.stp, movement);
 }
 
 void astro_axis_add_fine_adjusts(void) {
@@ -379,6 +402,7 @@ void astro_goto_target(void) {
 			stepper_set_direction(&self.axises.RA.stp, clockwise);
 		}
 		
+		self.target_info.current_movement = GOING_TO;
 		astro_start_moving();
 	}
 }
@@ -388,14 +412,8 @@ void astro_go_home(void) {
 	astro_goto_target();
 }
 
-void astro_full_stop(void) {
-	
-	HAL_TIM_PWM_Stop_IT(self.axises.DEC.stp.timer_config.htim, self.axises.DEC.stp.timer_config.TIM_CHANNEL);
-	HAL_TIM_PWM_Stop_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
-}
 
-
-void astro_stepper_position_step(motor_axis_t axis, movement_t movement) {
+void astro_stepper_position_step_isr(motor_axis_t axis) {
 	
 	uint16_t new_pos;
 	
@@ -408,7 +426,7 @@ void astro_stepper_position_step(motor_axis_t axis, movement_t movement) {
 									 STEPPER_MAX_STEPS);
 			self.axises.RA.stp.info.position = new_pos;
 			
-			update_stp_period(&self.axises.RA.stp, movement);
+			update_stp_period(&self.axises.RA.stp);
 			break;
 		case Declination:
 			if (!self.axises.DEC.stp.info.is_configured || !self.axises.DEC.stp.info.on_status) {
@@ -419,7 +437,7 @@ void astro_stepper_position_step(motor_axis_t axis, movement_t movement) {
 					STEPPER_MAX_STEPS);
 			self.axises.DEC.stp.info.position = new_pos;
 			
-			update_stp_period(&self.axises.DEC.stp, movement);
+			update_stp_period(&self.axises.DEC.stp);
 			break;
 		default:
 			break;

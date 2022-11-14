@@ -88,30 +88,70 @@ void astro_init(void);
  *
  *	GMST = 6.697374558 + 0.06570982441908 * whole_days_since_epoch + 1.00273790935 * hours_since_midnight
  *		 + 0.000026 * centuries_since_epoch^2
- *
- *	GMST_hours = 470 % 24 // = 14
- *	GMST_minutes =  floor(0.712605328 * 60) // = 42(.7563197)
- *
  */
 void astro_update_LMST(void);
 
+/**
+ * @brief Checks whether the mount has reached the target position.
+ *
+ * @return bool false if the mount is not at the target position, true otherwise.
+ */
 bool astro_is_at_target(void);
 
+/**
+ * @brief Updates the value from the adjust knob.
+ */
 void astro_update_raw_fine_adjusts(void);
 
+/**
+ * @brief Sets a new target to the mount, overwriting the previous one.
+ *
+ * @param target The target to be tracked.
+ */
 void astro_update_target(astro_target_t target);
 
+/**
+ * @brief Gives the pointer to the GNSS structure.
+ *
+ * @return GNSS_data_t [out] Pointer to the GNSS data struct.
+ */
 GNSS_data_t* astro_get_gnss_pointer(void);
 
-void astro_start_tracking(movement_t movement);
+/**
+ * @brief Starts the movement of the mount, tracking the target.
+ */
+void astro_start_tracking(void);
 
+/**
+ * @brief Starts the movement of the mount, going to the target.
+ */
 void astro_goto_target(void);
 
+/**
+ * @brief Starts the movement of the mount, going to home, being the LST RA.
+ */
 void astro_go_home(void);
 
+/**
+ * @brief Completely stops the movement of the mount.
+ */
 void astro_full_stop(void);
 
-/** Must be called from timer isr, just after ARR reload. */
-void astro_stepper_position_step(motor_axis_t axis, movement_t movement);
+/**
+ * @brief Free both motors to be moved barehanded.
+ */
+void astro_release(void);
+
+/**
+ * @brief Locks both motors back.
+ */
+void astro_engage(void);
+
+/**
+ * @brief ISR to update the stepper related changes.
+ *
+ * @note Must be called from timer ARR IRQ, as soon as the ARR reloads, to update teh future PWM period.
+ */
+void astro_stepper_position_step_isr(motor_axis_t axis);
 
 #endif //EQMOUNT_CUSTOM_CONTROLLER_ASTRO_CONV_H

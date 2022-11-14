@@ -13,14 +13,14 @@
 #define WORM_RATIO 96
 
 typedef enum motor_axis {
-    Right_Ascension,
-    Declination,
-    Focus,
+	Right_Ascension,
+	Declination,
+	Focus,
 } motor_axis_t;
 
 typedef enum dir_t {
-    counter_clockwise = -1,
-    clockwise = 1,
+	counter_clockwise = -1,
+	clockwise = 1,
 } direction_t;
 
 typedef struct stepper_motor {
@@ -31,29 +31,29 @@ typedef struct stepper_motor {
 		bool on_status; /** < is the motor being driven right now? */
 		bool is_configured;
 	} info;
-
-    struct timer_config {
-        const uint32_t TIM_CHANNEL;
+	
+	struct timer_config {
+		const uint32_t TIM_CHANNEL;
 		const TIM_HandleTypeDef* htim;
 		TIM_TypeDef* TIM;
-        uint16_t pwm_period; /** < in deca-micro_seconds, 0 if invalid */
-    } timer_config;
-
-    struct {
-        const GPIO_TypeDef* GPIO;
-        const uint16_t port;
-    } step_pin;
-
-    struct {
-        const GPIO_TypeDef* GPIO;
-        const uint16_t port;
-    } dir_pin;
-
-    struct {
-        const GPIO_TypeDef* GPIO;
-        const uint16_t port;
-    } enable_pin;
-
+		uint16_t pwm_period; /** < in deca-micro_seconds, 0 if invalid */
+	} timer_config;
+	
+	struct {
+		const GPIO_TypeDef* GPIO;
+		const uint16_t port;
+	} step_pin;
+	
+	struct {
+		const GPIO_TypeDef* GPIO;
+		const uint16_t port;
+	} dir_pin;
+	
+	struct {
+		const GPIO_TypeDef* GPIO;
+		const uint16_t port;
+	} enable_pin;
+	
 } stepper_t;
 
 /**
@@ -69,6 +69,20 @@ void stepper_init(stepper_t* stp);
  * @param stp [out] Address of stepper motor to be configured.
  */
 void stepper_reverse_direction(stepper_t* stp);
+
+/**
+ * @brief Enables the stepper.
+ *
+ * @param stp [out] Address of stepper motor to be configured.
+ */
+void stepper_disable(stepper_t* stp);
+
+/**
+ * @brief Disables the stepper.
+ *
+ * @param stp [out] Address of stepper motor to be configured.
+ */
+void stepper_enable(stepper_t* stp);
 
 /**
  * @brief Sets the stepper direction.

@@ -30,6 +30,7 @@
 #include "variables.h"
 #include "steppers.h"
 #include "astro_conv.h"
+#include "astro_targets.h"
 #include "PA6H.h"
 
 /* USER CODE END Includes */
@@ -65,9 +66,6 @@ enum menu_options {
 	hemisphere,
 	automatic_mode,
 	manual_mode,
-	brilho_tela,
-	tempo_tela,
-	save_configs,
 	MENU_SIZE, //must be the last value
 };
 
@@ -80,9 +78,6 @@ const char* menu_str[MENU_SIZE] = {
 		[hemisphere]     = "Hemisferio",
 		[automatic_mode] = "Modo automatico",
 		[manual_mode]    = "Modo manual",
-		[brilho_tela]    = "Contraste",
-		[tempo_tela]     = "Luz da tela",
-		[save_configs]   = "Salvar configs",
 };
 
 uint16_t menu_op_value[MENU_SIZE] = {0};
@@ -155,6 +150,10 @@ int main(void) {
 	led_start_blink();
 	led_set_slow_fast_blink();
 	
+	bool flag = true;
+	
+	uint64_t delay = 0;
+	
 	/* USER CODE END 2 */
 	
 	/* Infinite loop */
@@ -166,7 +165,19 @@ int main(void) {
 		
 		astro_update_raw_fine_adjusts();
 		
-		astro_go_home();
+		if (flag) {
+			astro_go_home();
+		}
+		while (astro_get_gnss_pointer()->is_valid != VALID_DATA) {
+		}
+		
+		
+		if (flag) {
+			astro_update_target(teste_target);
+			astro_goto_target();
+			flag = false;
+		}
+		
 		
 	}
 	/* USER CODE END 3 */
@@ -233,16 +244,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
 	if (htim->Instance == TIM1) {
 		HAL_IncTick();
 	}
-		/* USER CODE BEGIN Callback 1 */
-	else if (htim->Instance == TIM3) { //M1
-		astro_stepper_position_step(Right_Ascension, GOING_TO);
-		
-		if (!menu_op_value[automatic_mode] && menu_op_value[manual_mode]) {
-		}
-		
-	} else if (htim->Instance == TIM2) { //M2
-		astro_stepper_position_step(Declination, GOING_TO);
-	}
+	/* USER CODE BEGIN Callback 1 */
+	
 	/* USER CODE END Callback 1 */
 }
 
