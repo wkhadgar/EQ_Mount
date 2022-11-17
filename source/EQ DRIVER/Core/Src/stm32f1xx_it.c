@@ -235,11 +235,10 @@ void TIM1_UP_IRQHandler(void)
 void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
-
+  astro_DEC_position_step_isr();
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
-	astro_stepper_position_step_isr(Declination);
   /* USER CODE END TIM2_IRQn 1 */
 }
 
@@ -248,10 +247,10 @@ void TIM2_IRQHandler(void)
   */
 void TIM3_IRQHandler(void) {
 	/* USER CODE BEGIN TIM3_IRQn 0 */
+	astro_RA_position_step_isr();
 	/* USER CODE END TIM3_IRQn 0 */
 	HAL_TIM_IRQHandler(&htim3);
 	/* USER CODE BEGIN TIM3_IRQn 1 */
-	astro_stepper_position_step_isr(Right_Ascension);
 	/* USER CODE END TIM3_IRQn 1 */
 }
 

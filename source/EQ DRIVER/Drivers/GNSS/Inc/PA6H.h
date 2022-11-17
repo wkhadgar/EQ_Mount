@@ -59,6 +59,6 @@ bool GNSS_get_data(GNSS_data_t *GNSS_data, char *string);
  * @param GNSS_data [out] Target struct for the data received to be saved on.
  * @return bool true if the data was successfully saved, false otherwise.
  */
-bool GNSS_UART_CallBack(GNSS_data_t *GNSS_data);
+bool GNSS_UART_CallBack(GNSS_data_t* GNSS_data);
 
 #endif //EQMOUNT_CUSTOM_CONTROLLER_PA6H_GNSS_H

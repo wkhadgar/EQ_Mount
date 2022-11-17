@@ -34,24 +34,24 @@ typedef struct stepper_motor {
 	
 	struct timer_config {
 		const uint32_t TIM_CHANNEL;
-		const TIM_HandleTypeDef* htim;
+		TIM_HandleTypeDef* htim;
 		TIM_TypeDef* TIM;
 		uint16_t pwm_period; /** < in deca-micro_seconds, 0 if invalid */
 	} timer_config;
 	
 	struct {
-		const GPIO_TypeDef* GPIO;
-		const uint16_t port;
+		GPIO_TypeDef* GPIO;
+		uint16_t port;
 	} step_pin;
 	
 	struct {
-		const GPIO_TypeDef* GPIO;
-		const uint16_t port;
+		GPIO_TypeDef* GPIO;
+		uint16_t port;
 	} dir_pin;
 	
 	struct {
-		const GPIO_TypeDef* GPIO;
-		const uint16_t port;
+		GPIO_TypeDef* GPIO;
+		uint16_t port;
 	} enable_pin;
 	
 } stepper_t;

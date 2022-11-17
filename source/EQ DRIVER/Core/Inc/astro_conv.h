@@ -30,8 +30,9 @@ typedef enum {
 } reachability_t;
 
 typedef enum {
-	TRACKING = 0,
-	GOING_TO = 1,
+	STOPPED = 0,
+	TRACKING,
+	GOING_TO,
 } movement_t;
 
 /**
@@ -49,7 +50,7 @@ typedef struct {
  */
 typedef struct {
 	double decimal_degrees;
-	uint16_t degrees;
+	int16_t degrees;
 	uint8_t arc_minutes;
 	uint8_t arc_seconds;
 } angle_t;
@@ -67,7 +68,6 @@ typedef struct astro_pos {
  */
 typedef struct astro_target {
 	astro_pos_t position;
-	char* name; /** characters limit + '\0' */
 } astro_target_t;
 
 /**
@@ -148,10 +148,17 @@ void astro_release(void);
 void astro_engage(void);
 
 /**
- * @brief ISR to update the stepper related changes.
+ * @brief ISR to update the RA stepper related changes.
  *
- * @note Must be called from timer ARR IRQ, as soon as the ARR reloads, to update teh future PWM period.
+ * @note Must be called from timer ARR IRQ, as soon as the ARR reloads, to update the future PWM period.
  */
-void astro_stepper_position_step_isr(motor_axis_t axis);
+void astro_RA_position_step_isr(void);
+
+/**
+ * @brief ISR to update the DEC stepper related changes.
+ *
+ * @note Must be called from timer ARR IRQ, as soon as the ARR reloads, to update the future PWM period.
+ */
+void astro_DEC_position_step_isr(void);
 
 #endif //EQMOUNT_CUSTOM_CONTROLLER_ASTRO_CONV_H

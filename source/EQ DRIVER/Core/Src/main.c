@@ -82,7 +82,7 @@ const char* menu_str[MENU_SIZE] = {
 
 uint16_t menu_op_value[MENU_SIZE] = {0};
 
-uint32_t last_move_ticks = 0; // to track time passed in ms with HAL_GetTick()
+GNSS_data_t* GNSS;
 
 /* USER CODE END PV */
 
@@ -94,15 +94,13 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
 	if (huart == &huart1) {
-		if (GNSS_UART_CallBack(astro_get_gnss_pointer())) {
+		if (GNSS_UART_CallBack(GNSS)) {
 			astro_update_LMST();
 		}
 	}
 }
-
 /* USER CODE END 0 */
 
 /**
@@ -127,7 +125,7 @@ int main(void) {
 	SystemClock_Config();
 	
 	/* USER CODE BEGIN SysInit */
-	
+	GNSS = astro_get_gnss_pointer();
 	/* USER CODE END SysInit */
 	
 	/* Initialize all configured peripherals */
@@ -142,9 +140,6 @@ int main(void) {
 	
 	HAL_Delay(500);
 	GNSS_init();
-	
-	last_move_ticks = TICKS_NOW; /** < start time reference */
-	
 	astro_init();
 	
 	led_start_blink();
@@ -152,7 +147,7 @@ int main(void) {
 	
 	bool flag = true;
 	
-	uint64_t delay = 0;
+	astro_release();
 	
 	/* USER CODE END 2 */
 	
@@ -168,12 +163,13 @@ int main(void) {
 		if (flag) {
 			astro_go_home();
 		}
+
 		while (astro_get_gnss_pointer()->is_valid != VALID_DATA) {
 		}
 		
 		
 		if (flag) {
-			astro_update_target(teste_target);
+			astro_update_target(astro_target[JUPITER]);
 			astro_goto_target();
 			flag = false;
 		}
@@ -239,7 +235,6 @@ void SystemClock_Config(void) {
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
 	/* USER CODE BEGIN Callback 0 */
-	uint16_t new_period;
 	/* USER CODE END Callback 0 */
 	if (htim->Instance == TIM1) {
 		HAL_IncTick();

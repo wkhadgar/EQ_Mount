@@ -3,17 +3,17 @@
  */
 
 #include "../Inc/steppers.h"
-
+#include <math.h>
 
 void stepper_disable(stepper_t* stp) {
-    stp->info.on_status = 0;
-    HAL_GPIO_WritePin(stp->enable_pin.GPIO, stp->enable_pin.port, (GPIO_PinState) !stp->info.on_status);
+	stp->info.on_status = 0;
+	HAL_GPIO_WritePin(stp->enable_pin.GPIO, stp->enable_pin.port, (!stp->info.on_status));
 }
 
 void stepper_enable(stepper_t* stp) {
-    stp->info.on_status = 1;
-    HAL_GPIO_WritePin(stp->enable_pin.GPIO, stp->enable_pin.port, (GPIO_PinState) !stp->info.on_status);
-    HAL_GPIO_WritePin(stp->dir_pin.GPIO, stp->dir_pin.port, (GPIO_PinState) stp->info.direction);
+	stp->info.on_status = 1;
+	HAL_GPIO_WritePin(stp->enable_pin.GPIO, stp->enable_pin.port, !stp->info.on_status);
+	HAL_GPIO_WritePin(stp->dir_pin.GPIO, stp->dir_pin.port, stp->info.direction);
 }
 
 void stepper_init(stepper_t* stp) {
@@ -32,8 +32,8 @@ void stepper_init(stepper_t* stp) {
 }
 
 void stepper_reverse_direction(stepper_t* stp) {
-    stp->info.direction = !stp->info.direction;
-    HAL_GPIO_WritePin(stp->dir_pin.GPIO, stp->dir_pin.port, (GPIO_PinState) stp->info.direction);
+	stp->info.direction = !stp->info.direction;
+	HAL_GPIO_WritePin(stp->dir_pin.GPIO, stp->dir_pin.port, stp->info.direction);
 }
 
 void stepper_set_direction(stepper_t* stp, direction_t dir) {
@@ -46,33 +46,43 @@ void stepper_set_direction(stepper_t* stp, direction_t dir) {
 	}
 }
 
-inline uint16_t stepper_to_target_smoothen_period_update(int32_t target_relative_dist) {
-	static const uint16_t DECELERATION_DELTA_RANGE = 5 * MICRO_STEPPING;
-	static const uint16_t MAX_PERIOD = 1850 * 8;
-	static const uint8_t PERIOD_DELTA = 20;
-	static int8_t delta_magnitude = -1;
-	static uint16_t this_step_period = MAX_PERIOD;
-	
-	uint32_t absolute_dist = target_relative_dist >= 0 ? target_relative_dist : -target_relative_dist;
-	
-	if (!absolute_dist) {
-		
-		return MAX_PERIOD;
-    }
+#define MIN_PERIOD 120
+#define MAX_PERIOD 1000
+#define DELTA_PERIOD 20
+#define DECELERATION_DELTA_RANGE 1000
 
-    if (absolute_dist < DECELERATION_DELTA_RANGE) {
-        delta_magnitude = 1; //increase period
-    } else {
-        delta_magnitude = -1; //decrease period
-    }
+static int8_t delta_magnitude = -1;
+static uint16_t this_step_period = MAX_PERIOD;
 
-    this_step_period += delta_magnitude * PERIOD_DELTA; /** new period */
+inline uint16_t
+stepper_to_target_smoothen_period_update(int32_t
+target_relative_dist) {
 
-    if (this_step_period > MAX_PERIOD) { //clamping deceleration;
-        this_step_period = MAX_PERIOD;
-    } else if (this_step_period < 1850) { //clamping acceleration
-        this_step_period = 1850;
-    }
+uint32_t absolute_dist = target_relative_dist >= 0 ? target_relative_dist : -target_relative_dist;
 
-    return this_step_period;
+if (!absolute_dist) {
+this_step_period = MAX_PERIOD;
+return MAX_PERIOD;
+}
+
+if (absolute_dist < DECELERATION_DELTA_RANGE) {
+delta_magnitude = 1; //increase period
+} else {
+delta_magnitude = -1; //decrease period
+}
+
+this_step_period +=
+
+delta_magnitude* sqrt(sqrt(this_step_period
+
+/MIN_PERIOD)); /** new period */
+
+if (this_step_period > MAX_PERIOD) { //clamping deceleration;
+this_step_period = MAX_PERIOD;
+} else if (this_step_period < MIN_PERIOD) { //clamping acceleration
+this_step_period = MIN_PERIOD;
+}
+
+return
+this_step_period;
 }

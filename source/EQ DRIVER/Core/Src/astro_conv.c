@@ -20,7 +20,7 @@ typedef struct {
 /**
  * @brief Estrutura da montagem equatorial.
  */
-static struct mount_data {
+struct mount_data {
 	
 	int8_t raw_fine_adjusts;
 	GNSS_data_t GNSS_data;
@@ -52,6 +52,7 @@ static struct mount_data {
 		},
 		.target_info = {
 				.reachability = UNKNOWN_REACH,
+				.current_movement = STOPPED,
 		},
 		.axises = {
 				.RA = {
@@ -122,18 +123,24 @@ static inline double signed_cyclic_distance(double origin, double target, uint32
 	return cw_d < ccw_d ? cw_d : -ccw_d;
 }
 
-static inline uint32_t cyclic_modulus(int32_t value, uint16_t modulus) {
-	
-	value %= modulus;
-	
-	if (value < 0) {
-		value += modulus;
-	}
-	
-	return value;
+static inline uint32_t
+cyclic_modulus(int32_t
+value,
+uint32_t modulus
+) {
+
+value = value % modulus;
+
+if (value < 0) {
+value +=
+modulus;
 }
 
-static inline double cyclic_float_modulus(double num, uint16_t mod) {
+return
+value;
+}
+
+static inline double cyclic_float_modulus(double num, uint32_t mod) {
 	
 	while (num > mod) {
 		num -= mod;
@@ -274,8 +281,6 @@ static void astro_set_home(void) {
 	if (self.GNSS_data.is_valid == VALID_DATA) {
 		self.target_info.reachability = REACHABLE;
 		
-		self.target_info.current_target.name = "Home - at LST";
-		
 		self.target_info.current_target.position.declination.degrees = 0;
 		self.target_info.current_target.position.declination.arc_minutes = 0;
 		
@@ -295,8 +300,8 @@ static reachability_t check_reachability(time__t target_RA) {
 	set_end = cyclic_modulus(self.time_reference.LST_time.hours + 6, EARTH_ROTATION_HOURS);
 	rise_begin = cyclic_modulus(self.time_reference.LST_time.hours - 6, EARTH_ROTATION_HOURS);
 	
-	is_risen = (target_RA.hours > rise_begin);
-	is_set = (target_RA.hours >= set_end);
+	is_risen = (target_RA.hours >= rise_begin) && (target_RA.hours <= self.time_reference.LST_time.hours);
+	is_set = (target_RA.hours >= set_end) && (target_RA.hours > self.time_reference.LST_time.hours);
 	
 	
 	if (!is_risen) {
@@ -358,6 +363,7 @@ GNSS_data_t* astro_get_gnss_pointer(void) {
 static void astro_start_moving(void) {
 	
 	HAL_TIM_PWM_Start_IT(self.axises.RA.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
+	HAL_TIM_PWM_Start_IT(self.axises.DEC.stp.timer_config.htim, self.axises.RA.stp.timer_config.TIM_CHANNEL);
 }
 
 void astro_full_stop(void) {
@@ -367,21 +373,17 @@ void astro_full_stop(void) {
 }
 
 void astro_release(void) {
-	stepper_disable(&self.axises.RA.stp);
 	stepper_disable(&self.axises.DEC.stp);
+	stepper_disable(&self.axises.RA.stp);
+	self.axises.DEC.stp.info.on_status = false;
+	self.axises.RA.stp.info.on_status = false;
 }
 
 void astro_engage(void) {
-	stepper_enable(&self.axises.RA.stp);
 	stepper_enable(&self.axises.DEC.stp);
-}
-
-void astro_start_tracking(void) {
-	
-	stepper_set_direction(&self.axises.RA.stp, clockwise);
-	
-	self.target_info.current_movement = TRACKING;
-	astro_start_moving();
+	stepper_enable(&self.axises.RA.stp);
+	self.axises.DEC.stp.info.on_status = true;
+	self.axises.RA.stp.info.on_status = true;
 }
 
 void astro_axis_add_fine_adjusts(void) {
@@ -391,6 +393,15 @@ void astro_axis_add_fine_adjusts(void) {
 	self.time_reference.RA_fine_period_adjust = (int16_t)(self.raw_fine_adjusts * STEPPER_PERIOD_FINE_ADJUST_SCALER);
 }
 
+void astro_start_tracking(void) {
+	
+	stepper_set_direction(&self.axises.RA.stp, clockwise);
+	
+	self.target_info.current_movement = TRACKING;
+	
+	astro_engage();
+	astro_start_moving();
+}
 
 void astro_goto_target(void) {
 	
@@ -398,11 +409,23 @@ void astro_goto_target(void) {
 		
 		if (self.axises.RA.stp.info.target_position < self.axises.RA.stp.info.position) {
 			stepper_set_direction(&self.axises.RA.stp, counter_clockwise);
+			self.axises.RA.stp.info.direction = counter_clockwise;
 		} else {
 			stepper_set_direction(&self.axises.RA.stp, clockwise);
+			self.axises.RA.stp.info.direction = clockwise;
+		}
+		
+		if (self.axises.DEC.stp.info.target_position < self.axises.DEC.stp.info.position) {
+			stepper_set_direction(&self.axises.DEC.stp, counter_clockwise);
+			self.axises.DEC.stp.info.direction = counter_clockwise;
+		} else {
+			stepper_set_direction(&self.axises.DEC.stp, clockwise);
+			self.axises.DEC.stp.info.direction = clockwise;
 		}
 		
 		self.target_info.current_movement = GOING_TO;
+		
+		astro_engage();
 		astro_start_moving();
 	}
 }
@@ -413,33 +436,36 @@ void astro_go_home(void) {
 }
 
 
-void astro_stepper_position_step_isr(motor_axis_t axis) {
+void astro_RA_position_step_isr(void) {
 	
-	uint16_t new_pos;
+	if (!self.axises.RA.stp.info.is_configured || !self.axises.RA.stp.info.on_status) {
+		return;
+	}
 	
-	switch (axis) {
-		case Right_Ascension:
-			if (!self.axises.RA.stp.info.is_configured || !self.axises.RA.stp.info.on_status) {
-				return;
-			}
-			new_pos = cyclic_modulus(((int32_t)(self.axises.RA.stp.info.position)) + self.axises.RA.stp.info.direction,
-									 STEPPER_MAX_STEPS);
-			self.axises.RA.stp.info.position = new_pos;
-			
-			update_stp_period(&self.axises.RA.stp);
-			break;
-		case Declination:
-			if (!self.axises.DEC.stp.info.is_configured || !self.axises.DEC.stp.info.on_status) {
-				return;
-			}
-			new_pos = cyclic_modulus(
-					((int32_t)(self.axises.DEC.stp.info.position)) + self.axises.DEC.stp.info.direction,
-					STEPPER_MAX_STEPS);
-			self.axises.DEC.stp.info.position = new_pos;
-			
-			update_stp_period(&self.axises.DEC.stp);
-			break;
-		default:
-			break;
+	self.axises.RA.stp.info.position = cyclic_modulus(
+			((int32_t)(self.axises.RA.stp.info.position)) + self.axises.RA.stp.info.direction,
+			STEPPER_MAX_STEPS * 96);
+	
+	update_stp_period(&self.axises.RA.stp);
+	
+	if (astro_is_at_target()) {
+		self.target_info.current_movement = TRACKING;
+	}
+}
+
+void astro_DEC_position_step_isr(void) {
+	if (!self.axises.DEC.stp.info.is_configured || !self.axises.DEC.stp.info.on_status) {
+		return;
+	}
+	
+	self.axises.DEC.stp.info.position = cyclic_modulus(
+			((int32_t)(self.axises.DEC.stp.info.position)) + self.axises.DEC.stp.info.direction,
+			STEPPER_MAX_STEPS * 96);
+	
+	if (astro_is_at_target()) {
+		self.target_info.current_movement = STOPPED;
+		HAL_TIM_PWM_Stop_IT(self.axises.DEC.stp.timer_config.htim, self.axises.DEC.stp.timer_config.TIM_CHANNEL);
+	} else {
+		update_stp_period(&self.axises.DEC.stp);
 	}
 }
