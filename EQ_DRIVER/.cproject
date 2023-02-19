@@ -161,15 +161,15 @@
 		<project id="EQ DRIVER.null.1410018274" name="EQ DRIVER"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1054745282;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1054745282.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.258874292;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1684409288">
+		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1008041538;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1008041538.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.1621103989;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.2120188483">
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1507073428;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1507073428.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.320093452;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.178043544">
+		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1434733706;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1434733706.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.16161057;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.493639669">
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="refreshScope"/>
-	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>
