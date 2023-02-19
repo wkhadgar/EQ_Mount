@@ -143,6 +143,7 @@ int main(void) {
 
     led_start_blink();
 
+
     /** Ensure NRF24L01 connection. */
     if (!nRF24_Check()) {
         led_set_fast_blink();
@@ -162,6 +163,7 @@ int main(void) {
             }
             set_flag(NRF_OK);
             led_set_slow_fast_blink();
+
         }
     }
     reset_flag(NRF_IRQ);
