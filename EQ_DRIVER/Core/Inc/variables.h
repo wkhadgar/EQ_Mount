@@ -11,11 +11,9 @@
 #include "main.h"
 
 typedef enum {
-	selected,
-    NRF_IRQ,
-    NRF_OK,
-	wake,
-	sleep,
+    NRF_SENT,
+    NRF_RECEIVE,
+	NRF_MAX_RT,
 	IRQ_vars_amount,
 } bool_var_t;
 
@@ -36,6 +34,6 @@ void set_flag(bool_var_t flag_var);
  * @brief: sets a given boolean to False.
  * @param flag_var: enum declared value of the flag.
  */
-void reset_flag(bool_var_t flag_var);
+void clear_flag(bool_var_t flag_var);
 
 #endif /* INC_VARIABLES_H_ */

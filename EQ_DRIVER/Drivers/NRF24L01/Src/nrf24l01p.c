@@ -4,77 +4,7 @@
 
 #include "nrf24l01p.h"
 #include "spi.h"
-
-#define CS NRF_SCN_GPIO_Port
-#define CS_pin NRF_SCN_Pin
-
-#define nRF24_CMD_R_REGISTER       (uint8_t)0x00      /**<  Register read */
-#define nRF24_CMD_W_REGISTER       (uint8_t)0x20      /**<  Register write */
-#define nRF24_CMD_ACTIVATE         (uint8_t)0x50      /**<  (De)Activates R_RX_PL_WID, W_ACK_PAYLOAD, W_TX_PAYLOAD_NOACK features */
-#define nRF24_CMD_R_RX_PL_WID       (uint8_t)0x60     /**<  Read RX-payload width for the top R_RX_PAYLOAD in the RX FIFO. */
-#define nRF24_CMD_R_RX_PAYLOAD     (uint8_t)0x61      /**<  Read RX payload */
-#define nRF24_CMD_W_TX_PAYLOAD     (uint8_t)0xA0      /**<  Write TX payload */
-#define nRF24_CMD_W_ACK_PAYLOAD    (uint8_t)0xA8      /**<  Write ACK payload */
-#define nRF24_CMD_W_TX_PAYLOAD_NO_ACK (uint8_t) 0xB0  /**<  Write TX payload and disable AUTOACK */
-#define nRF24_CMD_FLUSH_TX         (uint8_t)0xE1      /**<  Flush TX FIFO */
-#define nRF24_CMD_FLUSH_RX         (uint8_t)0xE2      /**<  Flush RX FIFO */
-#define nRF24_CMD_REUSE_TX_PL      (uint8_t)0xE3      /**<  Reuse TX payload */
-#define nRF24_CMD_LOCK_UNLOCK      (uint8_t)0x50      /**<  Lock/unlock exclusive features */
-#define nRF24_CMD_NOP              (uint8_t)0xFF      /**<  No operation (used for reading status register) */
-
-// nRF24L0 register definitions
-#define nRF24_REG_CONFIG           (uint8_t)0x00 /**< Configuration register */
-#define nRF24_REG_EN_AA            (uint8_t)0x01 /**< Enable "Auto acknowledgment" */
-#define nRF24_REG_EN_RXADDR        (uint8_t)0x02 /**< Enable RX addresses */
-#define nRF24_REG_SETUP_AW         (uint8_t)0x03 /**< Setup of address widths */
-#define nRF24_REG_SETUP_RETR       (uint8_t)0x04 /**< Setup of automatic retransmit */
-#define nRF24_REG_RF_CH            (uint8_t)0x05 /**< RF channel */
-#define nRF24_REG_RF_SETUP         (uint8_t)0x06 /**< RF setup register */
-#define nRF24_REG_STATUS           (uint8_t)0x07 /**< Status register */
-#define nRF24_REG_OBSERVE_TX       (uint8_t)0x08 /**< Transmit observe register */
-#define nRF24_REG_RPD              (uint8_t)0x09 /**< Received power detector */
-#define nRF24_REG_RX_ADDR_P0       (uint8_t)0x0A /**< Receive address data pipe 0 */
-#define nRF24_REG_RX_ADDR_P1       (uint8_t)0x0B /**< Receive address data pipe 1 */
-#define nRF24_REG_RX_ADDR_P2       (uint8_t)0x0C /**< Receive address data pipe 2 */
-#define nRF24_REG_RX_ADDR_P3       (uint8_t)0x0D /**< Receive address data pipe 3 */
-#define nRF24_REG_RX_ADDR_P4       (uint8_t)0x0E /**< Receive address data pipe 4 */
-#define nRF24_REG_RX_ADDR_P5       (uint8_t)0x0F /**< Receive address data pipe 5 */
-#define nRF24_REG_TX_ADDR          (uint8_t)0x10 /**< Transmit address */
-#define nRF24_REG_RX_PW_P0         (uint8_t)0x11 /**< Number of bytes in RX payload in data pipe 0 */
-#define nRF24_REG_RX_PW_P1         (uint8_t)0x12 /**< Number of bytes in RX payload in data pipe 1 */
-#define nRF24_REG_RX_PW_P2         (uint8_t)0x13 /**< Number of bytes in RX payload in data pipe 2 */
-#define nRF24_REG_RX_PW_P3         (uint8_t)0x14 /**< Number of bytes in RX payload in data pipe 3 */
-#define nRF24_REG_RX_PW_P4         (uint8_t)0x15 /**< Number of bytes in RX payload in data pipe 4 */
-#define nRF24_REG_RX_PW_P5         (uint8_t)0x16 /**< Number of bytes in RX payload in data pipe 5 */
-#define nRF24_REG_FIFO_STATUS      (uint8_t)0x17 /**< FIFO status register */
-#define nRF24_REG_DYNPD            (uint8_t)0x1C /**< Enable dynamic payload length */
-#define nRF24_REG_FEATURE          (uint8_t)0x1D /**< Feature register */
-
-// Register bits definitions
-#define nRF24_CONFIG_PRIM_RX       (uint8_t)0x01 // PRIM_RX bit in CONFIG register
-#define nRF24_CONFIG_PWR_UP        (uint8_t)0x02 // PWR_UP bit in CONFIG register
-#define nRF24_FEATURE_EN_DYN_ACK   (uint8_t)0x01 // EN_DYN_ACK bit in FEATURE register
-#define nRF24_FEATURE_EN_ACK_PAY   (uint8_t)0x02 // EN_ACK_PAY bit in FEATURE register
-#define nRF24_FEATURE_EN_DPL       (uint8_t)0x04 // EN_DPL bit in FEATURE register
-#define nRF24_FLAG_RX_DR           (uint8_t)0x40 // RX_DR bit (data ready RX FIFO interrupt)
-#define nRF24_FLAG_TX_DS           (uint8_t)0x20 // TX_DS bit (data sent TX FIFO interrupt)
-#define nRF24_FLAG_MAX_RT          (uint8_t)0x10 // MAX_RT bit (maximum number of TX retransmits interrupt)
-
-// Register masks definitions
-#define nRF24_MASK_REG_MAP         (uint8_t)0x1F // Mask bits[4:0] for CMD_RREG and CMD_WREG commands
-#define nRF24_MASK_CRC             (uint8_t)0x0C // Mask for CRC bits [3:2] in CONFIG register
-#define nRF24_MASK_STATUS_IRQ      (uint8_t)0x70 // Mask for all IRQ bits in STATUS register
-#define nRF24_MASK_RF_PWR          (uint8_t)0x06 // Mask RF_PWR[2:1] bits in RF_SETUP register
-#define nRF24_MASK_RX_P_NO         (uint8_t)0x0E // Mask RX_P_NO[3:1] bits in STATUS register
-#define nRF24_MASK_DATARATE        (uint8_t)0x28 // Mask RD_DR_[5,3] bits in RF_SETUP register
-#define nRF24_MASK_EN_RX           (uint8_t)0x3F // Mask ERX_P[5:0] bits in EN_RXADDR register
-#define nRF24_MASK_RX_PW           (uint8_t)0x3F // Mask [5:0] bits in RX_PW_Px register
-#define nRF24_MASK_RETR_ARD        (uint8_t)0xF0 // Mask for ARD[7:4] bits in SETUP_RETR register
-#define nRF24_MASK_RETR_ARC        (uint8_t)0x0F // Mask for ARC[3:0] bits in SETUP_RETR register
-#define nRF24_MASK_RXFIFO          (uint8_t)0x03 // Mask for RX FIFO status bits [1:0] in FIFO_STATUS register
-#define nRF24_MASK_TXFIFO          (uint8_t)0x30 // Mask for TX FIFO status bits [5:4] in FIFO_STATUS register
-#define nRF24_MASK_PLOS_CNT        (uint8_t)0xF0 // Mask for PLOS_CNT[7:4] bits in OBSERVE_TX register
-#define nRF24_MASK_ARC_CNT         (uint8_t)0x0F // Mask for ARC_CNT[3:0] bits in OBSERVE_TX register
+#include "variables.h"
 
 // Fake address to test transceiver presence (5 bytes long)
 #define NRF_CS_GPIO NRF_CSN_GPIO_Port
@@ -176,7 +106,7 @@ static void nRF24_read_multi_register(uint8_t reg, uint8_t* pBuf, uint8_t count)
  * @param pBuf [out] pointer to the buffer for the write data.
  * @param count number of bytes to write.
  */
-static void nRF24_write_multi_register(uint8_t reg, uint8_t* pBuf, uint8_t count) {
+static void nRF24_write_multi_register(uint8_t reg, const uint8_t* pBuf, uint8_t count) {
 	HAL_GPIO_WritePin(NRF_CS_GPIO, NRF_CS_PIN, GPIO_PIN_RESET);
 	nRF24_SPI_TR(reg);
 	while (count--) {
@@ -187,24 +117,25 @@ static void nRF24_write_multi_register(uint8_t reg, uint8_t* pBuf, uint8_t count
 
 // Set transceiver to it's initial state
 // note: RX/TX pipe addresses remains untouched
-void nRF24_init(void) {
+void nRF24_PRX_init(const uint8_t* addr, uint8_t channel) {
 	// Write to registers their initial values
-	nRF24_write_register(nRF24_REG_CONFIG, 0x08);
-	nRF24_write_register(nRF24_REG_EN_AA, 0x3F);
+	nRF24_write_register(nRF24_REG_CONFIG, 0x01);
+	nRF24_write_register(nRF24_REG_EN_AA, 0x00);
 	nRF24_write_register(nRF24_REG_EN_RXADDR, 0x03);
 	nRF24_write_register(nRF24_REG_SETUP_AW, 0x03);
 	nRF24_write_register(nRF24_REG_SETUP_RETR, 0x03);
-	nRF24_write_register(nRF24_REG_RF_CH, 0x02);
-	nRF24_write_register(nRF24_REG_RF_SETUP, 0x0E);
+	nRF24_write_register(nRF24_REG_RF_CH, channel);
+	nRF24_write_multi_register(nRF24_REG_TX_ADDR, addr, 5);
+	nRF24_write_register(nRF24_REG_RF_SETUP, 0x03);
 	nRF24_write_register(nRF24_REG_STATUS, 0x00);
-	nRF24_write_register(nRF24_REG_RX_PW_P0, 0x00);
-	nRF24_write_register(nRF24_REG_RX_PW_P1, 0x00);
-	nRF24_write_register(nRF24_REG_RX_PW_P2, 0x00);
-	nRF24_write_register(nRF24_REG_RX_PW_P3, 0x00);
-	nRF24_write_register(nRF24_REG_RX_PW_P4, 0x00);
-	nRF24_write_register(nRF24_REG_RX_PW_P5, 0x00);
+	nRF24_write_register(nRF24_REG_RX_PW_P0, 0x20);
+	nRF24_write_register(nRF24_REG_RX_PW_P1, 0x20);
+	nRF24_write_register(nRF24_REG_RX_PW_P2, 0x20);
+	nRF24_write_register(nRF24_REG_RX_PW_P3, 0x20);
+	nRF24_write_register(nRF24_REG_RX_PW_P4, 0x20);
+	nRF24_write_register(nRF24_REG_RX_PW_P5, 0x20);
 	nRF24_write_register(nRF24_REG_DYNPD, 0x00);
-	nRF24_write_register(nRF24_REG_FEATURE, 0x00);
+	nRF24_write_register(nRF24_REG_FEATURE, 0x03);
 	
 	// Clear the FIFO's
 	nRF24_FlushRX();
@@ -212,9 +143,6 @@ void nRF24_init(void) {
 	
 	// Clear any pending interrupt flags
 	nRF24_ClearIRQFlags();
-	
-	// Deassert CSN pin (chip release)
-	HAL_GPIO_WritePin(NRF_CS_GPIO, NRF_CS_PIN, GPIO_PIN_SET);
 }
 
 // Check if the nRF24L01 present
@@ -224,10 +152,11 @@ void nRF24_init(void) {
 bool nRF24_check(void) {
 	uint8_t rxbuf[5];
 	uint8_t i;
-	uint8_t* ptr = (uint8_t*)
-			nRF24_TEST_ADDR;
+	uint8_t* ptr = (uint8_t*) nRF24_TEST_ADDR;
 	
 	// Write test TX address and read TX_ADDR register
+	nRF24_SetPowerMode(nRF24_PWR_DOWN);
+	nRF24_read_multi_register(nRF24_CMD_R_REGISTER | nRF24_REG_TX_ADDR, rxbuf, 5);
 	nRF24_write_multi_register(nRF24_CMD_W_REGISTER | nRF24_REG_TX_ADDR, ptr, 5);
 	nRF24_read_multi_register(nRF24_CMD_R_REGISTER | nRF24_REG_TX_ADDR, rxbuf, 5);
 	
@@ -246,15 +175,7 @@ void nRF24_SetPowerMode(power_state_t mode) {
 	uint8_t reg;
 	
 	reg = nRF24_read_register(nRF24_REG_CONFIG);
-	if (mode == nRF24_PWR_UP) {
-		// Set the PWR_UP bit of CONFIG register to wake the transceiver
-		// It goes into Stanby-I mode with consumption about 26uA
-		reg |= nRF24_CONFIG_PWR_UP;
-	} else {
-		// Clear the PWR_UP bit of CONFIG register to put the transceiver
-		// into power down mode with consumption about 900nA
-		reg &= ~nRF24_CONFIG_PWR_UP;
-	}
+	reg = (mode == nRF24_PWR_UP) ? (reg | nRF24_CONFIG_PWR_UP) : (reg & ~nRF24_CONFIG_PWR_UP);
 	nRF24_write_register(nRF24_REG_CONFIG, reg);
 }
 
@@ -319,7 +240,7 @@ void nRF24_SetCRCScheme(crc_scheme_t scheme) {
 //   channel - radio frequency channel, value from 0 to 127
 // note: frequency will be (2400 + channel)MHz
 // note: PLOS_CNT[7:4] bits of the OBSERVER_TX register will be reset
-void nRF24_SetRFChannel(uint8_t channel) {
+inline void nRF24_SetRFChannel(uint8_t channel) {
 	nRF24_write_register(nRF24_REG_RF_CH, channel);
 }
 
@@ -328,8 +249,7 @@ void nRF24_SetRFChannel(uint8_t channel) {
 //   ard - auto retransmit delay, one of nRF24_ARD_xx values
 //   arc - count of auto retransmits, value form 0 to 15
 // note: zero arc value means that the automatic retransmission disabled
-void nRF24_SetAutoRetr(retransmit_delay_t ard, uint8_t arc) {
-	// Set auto retransmit settings (SETUP_RETR register)
+inline void nRF24_SetAutoRetr(retransmit_delay_t ard, uint8_t arc) {
 	nRF24_write_register(nRF24_REG_SETUP_RETR, (uint8_t) ((ard << 4) | (arc & nRF24_MASK_RETR_ARC)));
 }
 
@@ -337,7 +257,7 @@ void nRF24_SetAutoRetr(retransmit_delay_t ard, uint8_t arc) {
 // input:
 //   addr_width - RX/TX address field width, value from 3 to 5
 // note: this setting is common for all pipes
-void nRF24_SetAddrWidth(address_width_t addr_width) {
+inline void nRF24_SetAddrWidth(address_width_t addr_width) {
 	nRF24_write_register(nRF24_REG_SETUP_AW, addr_width);
 }
 
@@ -547,7 +467,7 @@ void nRF24_ClearIRQFlags(void) {
 // input:
 //   pBuf - pointer to the buffer with payload data
 //   length - payload length in bytes
-void nRF24_WritePayload(uint8_t* pBuf, uint8_t length) {
+void nRF24_WritePayload(const uint8_t* pBuf, uint8_t length) {
 	nRF24_write_multi_register(nRF24_CMD_W_TX_PAYLOAD, pBuf, length);
 }
 
@@ -609,6 +529,45 @@ nRF24_RXResult nRF24_ReadPayload(uint8_t* pBuf, uint8_t* length) {
 
 nRF24_RXResult nRF24_ReadPayloadDpl(uint8_t* pBuf, uint8_t* length) {
 	return nRF24_ReadPayloadGeneric(pBuf, length, 1);
+}
+
+nRF24_TXResult nRF24_TransmitPacket(const uint8_t* pBuf, uint8_t length) {
+	volatile uint32_t wait = nRF24_WAIT_TIMEOUT;
+	
+	// Transfer a data from the specified buffer to the TX FIFO
+	nRF24_WritePayload(pBuf, length);
+	
+	HAL_Delay(1);
+	
+	while ((!get_flag(NRF_SENT)) && (!get_flag(NRF_MAX_RT)) && wait) {
+		HAL_Delay(1);
+		wait--;
+	}
+	
+	if (wait == 0) {
+		// Timeout
+		return nRF24_TX_TIMEOUT;
+	}
+	
+	// Clear pending IRQ flags
+	nRF24_ClearIRQFlags();
+	
+	if (get_flag(NRF_MAX_RT)) {
+		// Auto retransmit counter exceeds the programmed maximum limit (FIFO is not removed)
+		clear_flag(NRF_MAX_RT);
+		return nRF24_TX_MAXRT;
+	}
+	
+	if (get_flag(NRF_SENT)) {
+		// Successful transmission
+		clear_flag(NRF_SENT);
+		return nRF24_TX_SUCCESS;
+	}
+	
+	// Some banana happens, a payload remains in the TX FIFO, flush it
+	nRF24_FlushTX();
+	
+	return nRF24_TX_ERROR;
 }
 
 uint8_t nRF24_GetFeatures() {

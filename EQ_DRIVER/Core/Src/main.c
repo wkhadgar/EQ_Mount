@@ -43,7 +43,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define EQM_RF_CHANNEL 120
+#define PLD_LEN 32
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -76,7 +77,6 @@ struct {
 	bool manual_mode;
 } menu_values = {0};
 
-uint8_t received_payload[32];
 GNSS_data_t* GNSS;
 
 /* USER CODE END PV */
@@ -84,7 +84,9 @@ GNSS_data_t* GNSS;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-bool get_data(uint8_t* nRF24_payload, uint8_t payload_length);
+bool get_data(uint8_t* nRF24_payload, uint8_t* payload_length);
+
+bool send_data(const uint8_t* nRF24_payload, uint8_t payload_length);
 
 void nRF24_RX_ESB_setup(void);
 /* USER CODE END PFP */
@@ -107,7 +109,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
   */
 int main(void) {
 	/* USER CODE BEGIN 1 */
-	
 	/* USER CODE END 1 */
 	
 	/* MCU Configuration--------------------------------------------------------*/
@@ -136,37 +137,47 @@ int main(void) {
 	MX_TIM4_Init();
 	/* USER CODE BEGIN 2 */
 	
-	HAL_Delay(500);
+	bool is_connected = false;
+		uint8_t pld_len;
+		const uint8_t init_payload[] = "INIT";
+		const uint8_t ack_pld[PLD_LEN] = "ACK";
+		uint8_t recv_payload[PLD_LEN] = {0};
+
+	HAL_Delay(2000);
 	GNSS_init();
 	astro_init();
-	nRF24_RX_ESB_setup();
-	
 	led_start_blink();
-	
+	led_set_fast_blink(); /**< No NRF24 detected. */
 	
 	/** Ensure NRF24L01 connection. */
-	if (!nRF24_check()) {
-		led_set_fast_blink();
+	while (!nRF24_check()) {
+		/** Wait for NRF presence. */
 	}
-	led_set_slow_blink();
-	while (!get_flag(NRF_IRQ)) {
-		/** Wait for controller connection. */
-	}
-	led_set_always_on();
+	nRF24_RX_ESB_setup();
 	
-	uint8_t init_payload[10] = "INIT";
-	while (!get_data(received_payload, 10)) {
-		for (uint8_t i = 0; i < 5; i++) {
-			if (received_payload[i] != init_payload[i]) {
-				reset_flag(NRF_OK);
-				break;
+	while (!is_connected) {
+		led_set_slow_blink(); /**< No controller detected. */
+		while (!get_flag(NRF_RECEIVE)) {
+			/** Wait for controller connection. */
+			HAL_Delay(10);
+		}
+		clear_flag(NRF_RECEIVE);
+		
+		led_set_always_on(); /**< Confirmation pending. */
+		if (get_data(recv_payload, &pld_len)) {
+			for (uint8_t i = 0; i < 5; i++) {
+				is_connected = true;
+				if (recv_payload[i] != init_payload[i]) {
+					is_connected = false;
+				}
 			}
-			set_flag(NRF_OK);
-			led_set_slow_fast_blink();
-			
 		}
 	}
-	reset_flag(NRF_IRQ);
+	led_set_slow_fast_blink();
+	nRF24_SetOperationalMode(nRF24_MODE_TX);
+	HAL_Delay(10);
+	send_data(ack_pld, PLD_LEN);
+	nRF24_SetOperationalMode(nRF24_MODE_RX);
 	
 	bool flag = true;
 	
@@ -245,56 +256,31 @@ void SystemClock_Config(void) {
 
 /* USER CODE BEGIN 4 */
 void nRF24_RX_ESB_setup(void) {
-	// This is simple receiver with Enhanced ShockBurst:
-//   - RX address: 'ESB'
-//   - payload: 10 bytes
-//   - RF channel: 40 (2440MHz)
-//   - data rate: 250kbps
-//   - CRC scheme: 2 byte
-
-// Do the initial configurations.
-	nRF24_init();
-
-// Set RF channel
-	nRF24_SetRFChannel(40);
-
-// Set data rate
-	nRF24_SetDataRate(nRF24_DR_2Mbps);
-
-// Set CRC scheme
-	nRF24_SetCRCScheme(nRF24_CRC_2byte);
-
-// Set address width, it's common for all pipes (RX and TX)
-	nRF24_SetAddrWidth(3);
-
-// Configure RX PIPE
-	static const uint8_t nRF24_ADDR[] = {'E', 'S', 'B'};
 	
-	// program address for pipe
-	nRF24_SetAddr(nRF24_PIPE1, nRF24_ADDR);
-	// Auto-ACK: enabled, payload length: 10 bytes
-	nRF24_SetRXPipe(nRF24_PIPE1, nRF24_AA_ON, 10);
-
-// Set TX power for Auto-ACK (maximum, to ensure that transmitter will hear ACK reply)
-	nRF24_SetTXPower(nRF24_TXPWR_0dBm);
-
-// Set operational mode (PRX == receiver)
+	// Configure RX ADRRES
+	static const uint8_t nRF24_ADDR[] = "EQM0";
+	
+	// Do the initial configurations.
+	nRF24_SetPowerMode(nRF24_PWR_DOWN);
+	
+	nRF24_PRX_init(nRF24_ADDR, EQM_RF_CHANNEL);
 	nRF24_SetOperationalMode(nRF24_MODE_RX);
-
-// Clear any pending IRQ flags
-	nRF24_ClearIRQFlags();
-
-// Wake the transceiver
-	nRF24_SetPowerMode(nRF24_PWR_UP);
+	nRF24_SetAddr(nRF24_PIPE0, nRF24_ADDR);
+	nRF24_SetAddr(nRF24_PIPETX, nRF24_ADDR);
+	nRF24_SetRFChannel(EQM_RF_CHANNEL);
+	nRF24_SetAutoRetr(nRF24_ARD_NONE, 0);
+	nRF24_SetRXPipe(nRF24_PIPE0, nRF24_AA_OFF, PLD_LEN);
+	nRF24_SetDynamicPayloadLength(nRF24_DPL_OFF);
+	nRF24_SetCRCScheme(nRF24_CRC_off);
 	
+	nRF24_SetPowerMode(nRF24_PWR_UP);
 }
 
-
-bool get_data(uint8_t* nRF24_payload, uint8_t payload_length) {
+bool get_data(uint8_t* nRF24_payload, uint8_t* payload_length) {
 	
 	if (nRF24_GetStatus_RXFIFO() != nRF24_STATUS_RXFIFO_EMPTY) {
 		// Get a payload from the transceiver
-		nRF24_ReadPayload(nRF24_payload, &payload_length);
+		nRF24_ReadPayload(nRF24_payload, payload_length);
 		
 		// Clear all pending IRQ flags
 		nRF24_ClearIRQFlags();
@@ -303,6 +289,32 @@ bool get_data(uint8_t* nRF24_payload, uint8_t payload_length) {
 	
 	return false;
 }
+
+bool send_data(const uint8_t* nRF24_payload, uint8_t payload_length) {
+	
+	nRF24_TXResult tx_res;
+	
+	if (payload_length > 32) {
+		return false;
+	}
+	
+	// Transmit a packet
+	tx_res = nRF24_TransmitPacket(nRF24_payload, payload_length);
+	
+	switch (tx_res) {
+		case nRF24_TX_SUCCESS:
+			return true;
+		case nRF24_TX_MAXRT:
+			nRF24_ResetPLOS();
+			break;
+		case nRF24_TX_TIMEOUT:
+		default:
+			break;
+	}
+	
+	return false;
+}
+
 /* USER CODE END 4 */
 
 /**
