@@ -32,7 +32,6 @@
 *.app
 
 *.bak
-*.project
 *.launch
 *.code-workspace
 *.txt
