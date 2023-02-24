@@ -97,6 +97,8 @@ void Error_Handler(void);
 #define SPI_MOSI_GPIO_Port GPIOB
 #define LED_PWM_Pin GPIO_PIN_8
 #define LED_PWM_GPIO_Port GPIOB
+#define NRF_CE_Pin GPIO_PIN_9
+#define NRF_CE_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
