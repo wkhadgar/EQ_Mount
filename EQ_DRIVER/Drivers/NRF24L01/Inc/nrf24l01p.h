@@ -77,9 +77,10 @@
 #define nRF24_MASK_PLOS_CNT        (uint8_t)0xF0 // Mask for PLOS_CNT[7:4] bits in OBSERVE_TX register
 #define nRF24_MASK_ARC_CNT         (uint8_t) 0x0F // Mask for ARC_CNT[3:0] bits in OBSERVE_TX register
 
-#define nRF24_WAIT_TIMEOUT         (uint32_t) 10
+#define nRF24_WAIT_TIMEOUT         (uint32_t) 100
 #define PLD_LEN 32
 
+#define NRF24_TRANSF_MAX_LEN 31
 /**
  * @brief Enumerates the possible retransmit delays.
  */
@@ -200,6 +201,17 @@ typedef enum {
     nRF24_TX_MAXRT                   // Transmit failed with maximum auto retransmit count
 } nRF24_TXResult;
 
+typedef enum {
+    COMMAND,
+    REQUEST,
+    RESPONSE,
+} transf_t;
+
+typedef struct {
+    transf_t kind;
+    uint8_t data[NRF24_TRANSF_MAX_LEN];
+} nrf24_data_t;
+
 // Function prototypes
 void nRF24_init(const uint8_t* addr, uint8_t channel);
 
@@ -286,5 +298,7 @@ bool nRF24_GetData(uint8_t* nRF24_payload, uint8_t* payload_length);
 void nRF24_StartListening(void);
 
 void nRF24_StopListening(void);
+
+bool nRF24_Talk(const nrf24_data_t* question, nrf24_data_t* answer);
 
 #endif //EQDRIVER_NRF24L01P_H

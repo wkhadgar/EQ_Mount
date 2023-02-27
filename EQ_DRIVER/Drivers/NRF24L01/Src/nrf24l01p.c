@@ -13,8 +13,6 @@
 #define NRF_CE_GPIO NRF_CE_GPIO_Port
 #define NRF_CE_PIN NRF_CE_Pin
 
-#define nRF24_TEST_ADDR            "abcde"
-
 // Addresses of the RX_PW_P# registers
 static const uint8_t nRF24_RX_PW_PIPE[] = {
         nRF24_REG_RX_PW_P0,
@@ -99,7 +97,7 @@ static struct {
                 .pwr_state = nRF24_PWR_DOWN,
                 .mode = nRF24_MODE_TX,
                 .dpl = nRF24_DPL_OFF,
-                .auto_ack = nRF24_AA_ON,
+                .auto_ack = nRF24_AA_OFF,
                 .addr_w = nRF24_ADDR_5_BITS,
                 .tx_addr = {0},
                 .channel = 0,
@@ -222,8 +220,9 @@ void nRF24_init(const uint8_t* addr, uint8_t channel) {
     bool is_p_variant = false;
 
     HAL_Delay(5);
-    nRF24_SetAutoRetr(nRF24_ARD_1500us, 15);
-    nRF24_SetDataRate(nRF24_DR_1Mbps);
+    nRF24_SetAutoRetr(nRF24_ARD_2500us, 15);
+    nRF24_SetDataRate(nRF24_DR_250kbps);
+    nRF24_SetTXPower(nRF24_TXPWR_6dBm);
 
     prev_feat = nRF24_GetFeatures();
     nRF24_ActivateFeatures();
@@ -238,16 +237,17 @@ void nRF24_init(const uint8_t* addr, uint8_t channel) {
 
     nRF24_write_register(nRF24_REG_DYNPD, 0x00);
     nRF24_write_register(nRF24_REG_EN_AA, 0x3F);
-    nRF24_write_register(nRF24_REG_EN_RXADDR, 0x03);
+    nRF24_write_register(nRF24_REG_EN_RXADDR, 0x01);
     nRF24_setPayloadSize(32);
     nRF24_SetAddrWidth(nRF24_ADDR_5_BITS);
     nRF24_SetRFChannel(channel);
     nRF24_write_multi_register(nRF24_CMD_W_REGISTER | nRF24_REG_TX_ADDR, addr, 5);
+    nRF24_write_multi_register(nRF24_CMD_W_REGISTER | nRF24_REG_RX_ADDR_P0, addr, 5);
     nRF24_ClearIRQFlags();
     nRF24_FlushRX();
     nRF24_FlushTX();
 
-    nRF24_SetCRCScheme(nRF24_CRC_2byte);
+    nRF24_SetCRCScheme(nRF24_CRC_off);
     nRF24_SetPowerMode(nRF24_PWR_UP);
 }
 
@@ -837,4 +837,37 @@ void nRF24_StopListening(void) {
     nRF24_disable();
     HAL_Delay(100);
     nRF24_SetOperationalMode(nRF24_MODE_TX);
+}
+
+bool nRF24_Talk(const nrf24_data_t* question, nrf24_data_t* answer) {
+    uint8_t answer_size;
+    uint8_t timeout = nRF24_WAIT_TIMEOUT;
+    nRF24_StopListening();
+
+    while (!nRF24_SendData((const uint8_t*) question, PLD_LEN) && timeout) {
+        timeout--;
+        HAL_Delay(10);
+    }
+
+    if (timeout == 0) {
+        return false;
+    }
+
+    if (question->kind == REQUEST) {
+        timeout = nRF24_WAIT_TIMEOUT;
+        nRF24_StartListening();
+        while (!get_flag(NRF_RECEIVE) && timeout) {
+            timeout--;
+            HAL_Delay(10);
+        }
+
+        if (timeout == 0) {
+            return false;
+        }
+
+        clear_flag(NRF_RECEIVE);
+        nRF24_GetData((uint8_t*) answer, &answer_size);
+    }
+
+    return true;
 }

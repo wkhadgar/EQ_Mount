@@ -43,7 +43,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define EQM_RF_CHANNEL 73
+#define EQM_RF_CHANNEL 0
 #define PLD_LEN 32
 /* USER CODE END PD */
 
@@ -152,6 +152,8 @@ int main(void) {
     /** Ensure NRF24L01 connection. */
     while (!nRF24_check(nRF24_ADDR)) {
         /** Wait for NRF presence. */
+        nRF24_RX_ESB_setup(nRF24_ADDR);
+        HAL_Delay(100);
     }
 
     nRF24_StartListening();
@@ -159,6 +161,7 @@ int main(void) {
         led_set_slow_blink(); /**< No controller detected. */
         while (!get_flag(NRF_RECEIVE)) {
             /** Wait for controller connection. */
+
             HAL_Delay(10);
         }
         clear_flag(NRF_RECEIVE);
@@ -174,11 +177,6 @@ int main(void) {
         }
     }
     led_set_slow_fast_blink();
-
-    nRF24_StopListening();
-    HAL_Delay(10);
-    nRF24_SendData(ack_pld, PLD_LEN);
-    nRF24_StartListening();
 
     bool flag = true;
 
@@ -260,7 +258,7 @@ void nRF24_RX_ESB_setup(const uint8_t* addr) {
 
     // Do the initial configurations.
     nRF24_init(addr, EQM_RF_CHANNEL);
-    nRF24_SetAddr(nRF24_PIPE0, addr);
+
     nRF24_SetOperationalMode(nRF24_MODE_RX);
 }
 
